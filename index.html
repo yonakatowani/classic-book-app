@@ -1,0 +1,547 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>きょうの古典</title>
+  <meta name="theme-color" content="#ffffff">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="きょうの古典">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <style>
+    :root { --ink:#171717; --muted:#6b6b6b; --line:#dedede; --paper:#fff; --soft:#f5f5f4; --shadow:0 12px 36px rgba(0,0,0,.08); }
+    * { box-sizing:border-box; }
+    body { margin:0; background:#ececea; color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic",sans-serif; }
+    button,a { font:inherit; -webkit-tap-highlight-color:transparent; }
+    .app { width:min(100%,480px); min-height:100dvh; margin:auto; background:var(--paper); display:flex; flex-direction:column; }
+    header { position:sticky; top:0; z-index:20; min-height:72px; display:flex; align-items:center; justify-content:space-between; padding:20px 22px 12px; background:var(--paper); border-bottom:1px solid rgba(222,222,222,.72); }
+    .brand { display:grid; grid-template-columns:18px minmax(0,1fr); grid-template-rows:auto auto; column-gap:7px; align-items:center; min-width:0; padding:0; border:0; background:transparent; color:var(--ink); cursor:pointer; text-align:left; }
+    .brand-jp { grid-column:2; grid-row:1; font-family:"Hiragino Mincho ProN","Yu Mincho",cursive; font-size:18px; font-weight:700; letter-spacing:.08em; white-space:nowrap; line-height:1.1; transform:rotate(0deg); }
+    .brand-en { grid-column:2; grid-row:2; font-family:Georgia,"Times New Roman",serif; font-size:10px; letter-spacing:.08em; white-space:nowrap; line-height:1.2; }
+    .brand-mark { grid-column:1; grid-row:1 / span 2; width:18px; height:14px; display:inline-flex; align-items:flex-end; gap:1px; }
+    .brand-mark i { display:block; width:8px; height:12px; border:1px solid var(--ink); background:#fff; }
+    .brand-mark i:first-child { border-radius:2px 1px 1px 2px; transform:skewY(12deg); }
+    .brand-mark i:last-child { border-radius:1px 2px 2px 1px; transform:skewY(-12deg); }
+    .header-actions { display:flex; align-items:center; gap:8px; }
+    .menu-toggle { width:36px; height:36px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; padding:0; border:1px solid var(--line); border-radius:50%; background:#fff; color:var(--ink); cursor:pointer; }
+    .menu-toggle span,.menu-toggle::before,.menu-toggle::after { content:""; display:block; width:14px; height:1.5px; background:currentColor; }
+    .menu-toggle span { margin:0; }
+    .menu-panel { position:absolute; z-index:20; top:62px; right:16px; width:205px; display:none; padding:8px; background:#fff; border:1px solid var(--line); box-shadow:var(--shadow); border-radius:12px; }
+    .menu-panel.open { display:grid; animation:fade .18s ease; }
+    .menu-item { min-height:46px; border:0; border-radius:8px; background:transparent; text-align:left; padding:10px 12px; color:var(--ink); cursor:pointer; }
+    .menu-item:active { background:var(--soft); }
+    .stock { flex:0 0 80px; width:80px; height:32px; display:flex; flex-direction:row; align-items:center; justify-content:center; gap:2px; border:1px solid var(--line); border-radius:999px; padding:3px 6px; font-size:13px; line-height:1; white-space:nowrap; }
+    .stock-book { display:inline-block; line-height:1; transition:opacity .2s,filter .2s; }
+    .stock-book.empty { opacity:.2; filter:grayscale(1); }
+    main { flex:1; display:flex; flex-direction:column; padding:12px 22px calc(24px + env(safe-area-inset-bottom)); }
+    .screen { display:none; flex:1; flex-direction:column; animation:fade .25s ease; }
+    .screen.active { display:flex; }
+    @keyframes fade { from { opacity:0; transform:translateY(6px) } to { opacity:1; transform:none } }
+    .home-center,.stage,.proposal { flex:1; display:flex; flex-direction:column; justify-content:center; }
+    .eyebrow { margin:0 0 14px; color:var(--muted); font-size:13px; letter-spacing:.08em; }
+    h1,h2,h3,p { margin-top:0; }
+    h1 { font-family:Georgia,"Times New Roman",serif; font-size:clamp(32px,9vw,43px); line-height:1.25; margin-bottom:14px; }
+    h2 { font-size:21px; margin-bottom:8px; }
+    .lead,.muted { color:var(--muted); line-height:1.75; font-size:14px; }
+    .primary,.secondary,.choice,.nav-button,.text-button { border:0; cursor:pointer; border-radius:14px; min-height:56px; padding:14px 18px; transition:transform .15s,background .15s; }
+    .primary:active,.secondary:active,.choice:active,.nav-button:active { transform:scale(.98); }
+    .primary { background:var(--ink); color:#fff; font-weight:700; }
+    .primary:disabled { background:#bbb; cursor:not-allowed; }
+    .secondary { background:var(--soft); color:var(--ink); border:1px solid var(--line); }
+    .home-actions { display:grid; gap:10px; margin-top:26px; }
+    .countdown { margin-top:18px; background:var(--soft); padding:14px; border-radius:12px; color:var(--muted); font-size:13px; line-height:1.5; text-align:center; }
+    .bottom-nav { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:20px; }
+    .nav-button { min-height:48px; background:#fff; border:1px solid var(--line); font-size:13px; }
+    .stage { align-items:center; text-align:center; }
+    .stage .orb { width:84px; height:84px; border:1px solid var(--ink); border-radius:50%; margin-bottom:26px; animation:pulse 1s ease-in-out infinite alternate; }
+    @keyframes pulse { to { transform:scale(1.15); opacity:.35; } }
+    .stage-number { font-family:Georgia,serif; font-size:64px; margin:0; }
+    .proposal { text-align:center; align-items:center; }
+    .book-card { position:relative; width:100%; min-height:278px; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:42px 30px; overflow:hidden; border:1px solid #c9c4ba; box-shadow:0 18px 32px rgba(0,0,0,.12),inset 0 0 0 8px #eeece6; border-radius:3px 7px 7px 3px; background:linear-gradient(135deg,#f7f5ef,#e2ddd3); transform-origin:left center; animation:openBook .88s cubic-bezier(.18,.78,.18,1) both; backface-visibility:hidden; }
+    .book-card::before { content:""; position:absolute; z-index:0; inset:17px; border:1px solid rgba(23,23,23,.28); }
+    .book-card > * { position:relative; z-index:1; }
+    @keyframes openBook { 0% { opacity:0; transform:rotateY(-92deg) scaleX(.54); box-shadow:none; } 52% { opacity:1; transform:rotateY(8deg) scaleX(1); } 100% { opacity:1; transform:rotateY(0) scaleX(1); } }
+    .book-title { font-family:Georgia,"Times New Roman",serif; font-size:clamp(29px,8.5vw,40px); line-height:1.25; margin:0 0 15px; }
+    .author { font-size:15px; color:var(--muted); letter-spacing:.06em; margin:0; }
+    .detail-toggle { width:100%; min-height:48px; border:1px solid var(--line); border-radius:10px; background:#fff; color:var(--ink); margin:20px 0 6px; padding:10px 14px; cursor:pointer; font-size:14px; }
+    .accordion { width:100%; text-align:left; overflow:hidden; max-height:0; opacity:0; transition:max-height .35s ease,opacity .25s; }
+    .accordion.open { max-height:520px; opacity:1; }
+    .detail-box { background:var(--soft); border-radius:14px; padding:18px; font-size:14px; line-height:1.65; }
+    .detail-box p:last-child { margin-bottom:0; }
+    .detail-label { font-size:11px; letter-spacing:.1em; color:var(--muted); margin-bottom:4px; }
+    .swipe-card { position:relative; width:100%; perspective:1200px; touch-action:pan-y; cursor:grab; user-select:none; transition:transform .18s ease, opacity .18s ease; }
+    .swipe-card.dragging { transition:none; cursor:grabbing; }
+    .swipe-overlay { position:absolute; z-index:4; inset:17px 17px 17px 50%; display:none; align-items:flex-start; justify-content:flex-end; padding:26px 16px; border-radius:0 2px 2px 0; border-left:1px solid rgba(23,23,23,.22); background:rgba(255,255,255,.26); color:var(--ink); font-size:14px; font-weight:700; letter-spacing:.04em; text-shadow:0 1px 0 rgba(255,255,255,.75); pointer-events:none; }
+    .swipe-overlay.show { display:flex; animation:fade .12s ease; }
+    .swipe-overlay.later { inset:17px 50% 17px 17px; justify-content:flex-start; border-left:0; border-right:1px solid rgba(23,23,23,.22); border-radius:2px 0 0 2px; background:rgba(255,255,255,.26); }
+    .swipe-card.commit-read { transform:translateX(120%); opacity:0; }
+    .swipe-card.commit-later { transform:translateX(-120%); opacity:0; }
+    .already-wrap { margin-top:auto; padding-top:22px; text-align:center; }
+    .already-wrap p { margin:10px 0 0; color:var(--muted); font-size:12px; }
+    .already-button { border:0; background:transparent; color:var(--muted); text-decoration:underline; padding:12px; cursor:pointer; font-size:14px; }
+    .page-title { font-family:Georgia,serif; font-size:32px; margin:16px 0 20px; }
+    .detail-page { gap:8px; }
+    .summary { font-size:15px; line-height:1.8; margin-top:20px; }
+    .detail-page .page-title { font-size:29px; margin:6px 0 5px; }
+    .detail-page .author { margin-bottom:4px; }
+    .detail-page .summary { margin:10px 0 10px; }
+    .detail-page .detail-label { margin:0 0 2px; }
+    .opening { min-height:calc(1.8em * 3 + 34px); margin:6px 0 10px; padding:17px; border-left:3px solid var(--ink); background:var(--soft); white-space:pre-line; line-height:1.8; font-family:Georgia,"Hiragino Mincho ProN",serif; font-size:14px; }
+    .info-links { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:16px; }
+    .info-link { min-height:46px; display:flex; align-items:center; justify-content:center; border:1px solid var(--line); border-radius:10px; color:var(--ink); background:#fff; text-decoration:none; font-size:13px; }
+    .about-button { margin-top:14px; border:0; background:transparent; color:var(--muted); text-decoration:underline; padding:9px 0; text-align:left; cursor:pointer; }
+    .detail-links { display:grid; gap:10px; margin-top:auto; }
+    .external-links { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+    .external-links .secondary { min-height:56px; display:flex; align-items:center; justify-content:center; padding:10px 8px; font-size:inherit; text-align:center; }
+    #changeToLaterButton { min-height:40px; padding:8px; border:0; background:transparent; color:var(--muted); text-decoration:underline; font-size:13px; }
+    .availability-note { margin:12px 4px 0; color:#999; font-size:11px; line-height:1.55; text-align:center; }
+    .recommendation { margin:4px 0 2px; padding:14px 16px; border-left:3px solid var(--ink); background:var(--soft); }
+    .recommendation p { margin:0; color:var(--muted); font-size:14px; line-height:1.65; }
+    .reader { padding-bottom:0; }
+    .reader-bar { display:flex; align-items:center; justify-content:space-between; gap:12px; padding-bottom:14px; border-bottom:1px solid var(--line); }
+    .reader-back { border:0; background:transparent; padding:8px 0; color:var(--muted); cursor:pointer; }
+    .font-controls { display:flex; flex:0 0 auto; gap:6px; }
+    .font-control { flex:0 0 38px; width:38px; height:34px; padding:0; display:grid; place-items:center; border:1px solid var(--line); border-radius:8px; background:#fff; font-size:13px; line-height:1; cursor:pointer; }
+    .reader-title { font-family:Georgia,serif; font-size:28px; margin:26px 0 4px; }
+    .reader-byline { color:var(--muted); font-size:13px; margin-bottom:24px; }
+    .reader-body { flex:1; overflow:auto; padding:0 4px 34px; font-family:Georgia,"Hiragino Mincho ProN","Yu Mincho",serif; font-size:18px; line-height:2.15; letter-spacing:.04em; }
+    .reader-body p { margin:0 0 1.55em; text-align:justify; }
+    .reader-credit { margin-top:34px; padding:16px; border-top:1px solid var(--line); color:var(--muted); font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans",sans-serif; font-size:11px; line-height:1.65; }
+    .reader-guide { margin:30px 0 6px; padding:18px 16px 2px; border:1px solid var(--line); border-radius:14px; background:#fcfcfb; }
+    .reader-guide h2 { margin:0 0 14px; color:var(--muted); font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans",sans-serif; font-size:11px; letter-spacing:.08em; }
+    .list { display:grid; gap:10px; overflow:auto; padding-bottom:14px; }
+    .history-tools { display:grid; gap:10px; margin-bottom:14px; }
+    .history-search { width:100%; min-height:46px; padding:10px 13px; border:1px solid var(--line); border-radius:10px; background:#fff; font:inherit; font-size:14px; }
+    .filter-row { display:flex; gap:6px; overflow-x:auto; padding-bottom:2px; }
+    .filter-button { flex:0 0 auto; min-height:36px; padding:7px 11px; border:1px solid var(--line); border-radius:999px; background:#fff; color:var(--muted); font-size:12px; cursor:pointer; }
+    .filter-button.active { background:var(--ink); color:#fff; border-color:var(--ink); }
+    .history-item { border:1px solid var(--line); border-radius:12px; padding:14px; cursor:pointer; }
+    .history-head { display:flex; justify-content:space-between; gap:10px; font-size:12px; color:var(--muted); margin-bottom:8px; }
+    .history-side { display:flex; flex-direction:column; align-items:flex-end; gap:7px; text-align:right; }
+    .read-mark { display:inline-flex; align-items:center; gap:3px; color:var(--ink); font-size:12px; font-weight:700; }
+    .history-book { font-family:Georgia,serif; font-size:18px; margin-bottom:4px; }
+    .history-meta { color:var(--muted); font-size:13px; }
+    .small-button { margin-top:11px; background:var(--ink); color:#fff; border:0; border-radius:8px; padding:9px 12px; cursor:pointer; font-size:12px; }
+    .favorite-button { float:right; border:0; background:transparent; color:var(--muted); padding:0; font-size:20px; line-height:1; cursor:pointer; }
+    .favorite-button.active { color:var(--ink); }
+    .empty { color:var(--muted); text-align:center; padding:55px 0; line-height:1.8; }
+    .stat-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .stat { padding:17px; border:1px solid var(--line); border-radius:12px; }
+    .stat.wide { grid-column:1 / -1; }
+    .stat-value { font-family:Georgia,serif; font-size:31px; margin:3px 0; }
+    .stat-label { color:var(--muted); font-size:12px; }
+    .shelf-button { width:100%; margin-top:10px; padding:7px; border:1px solid var(--line); border-radius:8px; background:#fff; color:var(--ink); font-size:12px; cursor:pointer; }
+    .footer-button { margin-top:auto; }
+    .about-section { margin:0 0 22px; }
+    .about-heading { margin:0 0 8px; font-family:Georgia,"Times New Roman",serif; font-size:12px; letter-spacing:.08em; }
+    .about-copy { margin:0; white-space:pre-line; color:var(--muted); font-size:14px; line-height:1.8; }
+    .unlimited-link { display:inline-flex; align-items:center; justify-content:center; min-height:46px; margin-top:12px; padding:10px 14px; border:1px solid var(--line); border-radius:10px; color:var(--ink); text-decoration:none; font-size:13px; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header><button class="brand" data-screen="home" aria-label="メイン画面へ"><span class="brand-mark" aria-hidden="true"><i></i><i></i></span><span class="brand-jp">きょうの古典</span><span class="brand-en">CLASSICS BY CHANCE</span></button><div class="header-actions"><div id="stockBadge" class="stock" aria-label="提案ストック 3 / 3"></div><button id="menuToggle" class="menu-toggle" aria-label="メニューを開く" aria-expanded="false"><span></span></button></div></header>
+    <nav id="menuPanel" class="menu-panel" aria-label="メニュー"><button class="menu-item" data-screen="history">あなたの本棚</button><button class="menu-item" data-screen="stats">統計情報・CSV</button><button class="menu-item" data-screen="csvAbout">CSVダウンロードについて</button><button class="menu-item" data-screen="about">このアプリについて知る</button></nav>
+    <main>
+      <section id="home" class="screen active">
+        <div class="home-center">
+          <div id="countdown" class="countdown" hidden></div>
+          <div class="home-actions">
+            <button id="startButton" class="primary">FIND TODAY’S CLASSIC</button>
+            <button id="freeStartButton" class="secondary" hidden>無制限モードでさがす</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="stage" class="screen"><div class="stage"><div class="orb"></div><p class="eyebrow">FINDING TODAY'S CLASSIC</p><p id="stageText" class="stage-number">3</p><p class="muted">本日のおすすめを検討しています…</p></div></section>
+
+      <section id="proposal" class="screen">
+        <div class="proposal"><div id="swipeCard" class="swipe-card" aria-label="作品カード。左へスワイプであとで読む、右へスワイプで読んでみる"><div class="book-card"><p class="eyebrow">YOUR NEXT CLASSIC</p><h1 id="proposalTitle" class="book-title"></h1><p id="proposalAuthor" class="author"></p></div><div id="swipeOverlay" class="swipe-overlay"><span id="swipeOverlayText"></span></div></div>
+          <button id="detailToggle" class="detail-toggle">詳細を見る</button>
+          <div id="accordion" class="accordion"><div class="detail-box"><div class="detail-label">あらすじ</div><p id="proposalSummary"></p><div class="detail-label">著者について</div><p id="proposalBio"></p><div class="detail-label">みんなの選択</div><p id="proposalStats"></p><div class="info-links"><a id="workSearchLink" class="info-link" target="_blank" rel="noopener">作品についてもっと知る</a><a id="authorSearchLink" class="info-link" target="_blank" rel="noopener">著者についてもっと知る</a></div></div></div>
+        </div>
+        <div class="already-wrap"><button id="alreadyButton" class="already-button">すでに読んだ — 別の作品へ</button><p>読み終えている作品なら、ストックは使いません。</p></div>
+      </section>
+
+      <section id="detail" class="screen detail-page"><p class="eyebrow">ABOUT THIS CLASSIC</p><h1 id="detailTitle" class="page-title"></h1><p id="detailAuthor" class="author"></p><p id="detailSummary" class="summary"></p><p class="detail-label">本文の冒頭</p><div id="detailOpening" class="opening"></div><div class="recommendation"><p class="detail-label">こんなときにおすすめ</p><p id="detailRecommendation"></p></div><button id="detailPageMoreButton" class="detail-toggle">詳細を見る</button><div id="detailPageMore" class="accordion"><div class="detail-box"><div class="detail-label">著者について</div><p id="detailAuthorBio"></p><div class="detail-label">みんなの選択</div><p id="detailUserStats"></p><div class="info-links"><a id="detailWorkSearchLink" class="info-link" target="_blank" rel="noopener">作品についてもっと知る</a><a id="detailAuthorSearchLink" class="info-link" target="_blank" rel="noopener">著者についてもっと知る</a></div></div></div><div class="detail-links"><button id="readerButton" class="primary" hidden>アプリで続きを読む</button><button id="changeToLaterButton" class="secondary">やっぱりあとで読む</button><div class="external-links"><a id="aozoraLink" class="secondary" target="_blank" rel="noopener">青空文庫でさがす</a><a id="kindleLink" class="secondary" target="_blank" rel="noopener">Kindleでさがす</a></div><button id="freeMoreButton" class="secondary" hidden>無制限モードでもっとさがす</button><button class="secondary" data-screen="home">メイン画面へ</button></div><p class="availability-note">このアプリ内でおすすめされる作品は、青空文庫に収録されていない場合があります。</p></section>
+
+      <section id="reader" class="screen reader"><div class="reader-bar"><button id="readerBack" class="reader-back">← 戻る</button><div class="font-controls"><button class="font-control" data-font="-1" aria-label="文字を小さくする">A−</button><button class="font-control" data-font="1" aria-label="文字を大きくする">A+</button></div></div><h1 id="readerTitle" class="reader-title"></h1><p id="readerAuthor" class="reader-byline"></p><article id="readerBody" class="reader-body"></article></section>
+
+      <section id="about" class="screen"><p class="eyebrow">ABOUT THIS APP</p><h1 class="page-title">きょうの古典</h1><div class="about-section"><h2 class="about-heading">◇CONCEPT</h2><p class="about-copy">古典を読みたいけど、なにを読もうか決められない。
+選択肢が多すぎると、古典はなかなか読めません。
+
+このアプリは、古今東西の古典からひとつだけ、あなたに提案します。
+気になる古典に出会ったら、すぐに本文へ。
+
+古典への一歩を、すこしだけ軽くするーーー
+「きょうの古典」は、そんなちいさなアプリです。</p></div><div class="about-section"><h2 class="about-heading">◇RECOMMENDATION</h2><p class="about-copy">提案は一日に3回まで。
+回数制限は、毎日0時にリセットされます。
+
+※制限到達後は、「無制限モード」により引き続き利用可能です。</p></div><div class="about-section"><h2 class="about-heading">◇OTHERS</h2><p class="about-copy">日頃から古典に慣れ親しんでいる方も、
+普段は触れないようなジャンルや時代の古典との
+偶然の巡り合わせを「きょうの古典」でお楽しみください。</p></div><div class="about-section"><h2 class="about-heading">◇POINTS TO NOTES</h2><p class="about-copy">このアプリは古典を提案するアプリであり、古典を通読するためのアプリではありません。
+また、このアプリで提案される古典のすべてが、
+青空文庫やKindle等のサービスを通じて読めるわけではありません。
+一部の作品は、無料で読むことができない場合があります。あらかじめご了承ください。
+
+青空文庫やKindle無料版が利用できない場合でも、
+Kindle Unlimitedでは、多くの古典作品が配信されており、おすすめです。</p><a class="unlimited-link" href="https://www.amazon.co.jp/kindle-dbs/hz/subscribe/ku" target="_blank" rel="noopener">Kindle Unlimitedはこちらから登録</a></div><button class="secondary footer-button" data-screen="home">戻る</button></section>
+
+      <section id="history" class="screen"><p class="eyebrow">YOUR SHELF</p><h1 class="page-title">あなたの本棚</h1><div class="history-tools"><input id="historySearch" class="history-search" type="search" placeholder="タイトル・著者で検索"><div id="historyFilters" class="filter-row"><button class="filter-button active" data-filter="all">すべて</button><button class="filter-button" data-filter="read">読んでみる</button><button class="filter-button" data-filter="later">あとで読む</button><button class="filter-button" data-filter="finished">読んだ</button></div></div><div id="historyList" class="list"></div><button class="secondary footer-button" data-screen="home">メイン画面へ</button></section>
+
+      <section id="stats" class="screen"><p class="eyebrow">STATISTICS</p><h1 class="page-title">統計情報</h1><div id="statsGrid" class="stat-grid"></div><button class="secondary footer-button" data-screen="home">メイン画面へ</button></section>
+
+      <section id="csvAbout" class="screen"><p class="eyebrow">CSV DOWNLOAD</p><h1 class="page-title">CSVダウンロードについて</h1><p class="lead">選んだ作品の記録を、表計算ソフトなどで見返せるCSV形式で保存できます。</p><p class="lead">記録できるのは、選択日時・モード・タイトル・著者名・アクションです。読書の傾向を自分で眺めたり、あとで自分の読書ログへ移したりしたいときに役立ちます。</p><p class="lead">CSVには通常モードと無制限モードの履歴をどちらも含みます。</p><button id="csvButton" class="primary footer-button">CSVをダウンロード</button><button class="secondary" style="margin-top:10px" data-screen="home">メイン画面へ</button></section>
+    </main>
+  </div>
+  <script>
+    // 作品データはここに追加・編集できます。
+    const books = [
+      { title:'人間失格', author:'太宰治', summary:'「恥の多い生涯」を送ってきた青年・葉蔵が、自意識と他者への恐れのなかで自らを見失っていく告白体の長編。', authorBio:'太宰治（1909–1948）。無頼派を代表する小説家。人間の弱さや孤独を、軽やかさと痛みを交えて描いた。', openingText:'私は、その男の写真を三葉、見たことがある。\n一葉は、その男の、幼少時代、とでもいうべきであろうか、\n十歳前後の写真であった。', dummyStats:'読んでみる 41% / あとで読む 59%' },
+      { title:'こころ', author:'夏目漱石', summary:'「先生」と私の交流、そして先生が抱え続けた過去の秘密を通して、近代の孤独と罪の意識を見つめる長編。', authorBio:'夏目漱石（1867–1916）。英文学者として出発し、『吾輩は猫である』以後、日本近代文学を代表する作家となった。', openingText:'私はその人を常に先生と呼んでいた。\nだからここでもただ先生と書くだけで本名は打ち明けない。', dummyStats:'読んでみる 35% / あとで読む 65%' },
+      { title:'羅生門', author:'芥川龍之介', summary:'荒廃した京の羅生門で、行き場を失った下人が老婆と出会い、生きるための倫理を揺さぶられていく短編。', authorBio:'芥川龍之介（1892–1927）。鋭い知性と簡潔な文体で、古典や歴史を新しい物語へと生まれ変わらせた作家。', openingText:'ある日の暮方の事である。\n一人の下人が、羅生門の下で雨やみを待っていた。', dummyStats:'読んでみる 52% / あとで読む 48%' },
+      { title:'銀河鉄道の夜', author:'宮沢賢治', summary:'少年ジョバンニが、親友カムパネルラと銀河を走る列車に乗る。孤独と友情、ほんとうの幸福をめぐる幻想譚。', authorBio:'宮沢賢治（1896–1933）。詩人・童話作家。科学、農業、信仰を独自の宇宙観へ編み込んだ。', openingText:'ではみなさんは、そういうふうに川だと云われたり、\n乳の流れたあとだと云われたりしていた、このぼんやりと白いものが\nほんとうは何かご承知ですか。', dummyStats:'読んでみる 63% / あとで読む 37%' },
+      { title:'変身', author:'フランツ・カフカ', summary:'ある朝、グレゴール・ザムザは巨大な虫に変わっていた。不条理な出来事を通じ、家族と労働の関係を描く中編。', authorBio:'フランツ・カフカ（1883–1924）。プラハ生まれのドイツ語作家。官僚制と孤独の不条理を象徴的に描いた。', openingText:'ある朝、グレゴール・ザムザが不安な夢から目を覚ますと、\n寝床の中で一匹の巨大な毒虫に変わっていた。', dummyStats:'読んでみる 46% / あとで読む 54%' },
+      { title:'吾輩は猫である', author:'夏目漱石', summary:'名前のない猫の視点から、明治の知識人や人間社会の可笑しみを皮肉たっぷりに描くユーモア小説。', authorBio:'夏目漱石（1867–1916）。ユーモアと深い心理描写を併せ持つ、日本文学の大きな柱。', openingText:'吾輩は猫である。\n名前はまだ無い。\nどこで生れたかとんと見当がつかぬ。', dummyStats:'読んでみる 28% / あとで読む 72%' },
+      { title:'山月記', author:'中島敦', summary:'虎になった旧友・李徴の告白を聞く旅人。才に執着する心と、自尊心が人を隔てる怖さを描く短編。', authorBio:'中島敦（1909–1942）。漢籍への深い素養をもとに、孤独と変身をめぐる端正な作品を残した。', openingText:'隴西の李徴は博学才穎、天宝の末年、若くして名を虎榜に連ね、ついで江南尉に補せられたが、性、狷介、自ら恃むところ頗る厚く、賤吏に甘んずるを潔しとしなかった。', dummyStats:'読んでみる 57% / あとで読む 43%' },
+      { title:'檸檬', author:'梶井基次郎', summary:'不安と倦怠を抱えた「私」が、鮮烈な檸檬を手に京都の街を歩く。色彩と感覚が弾ける掌編。', authorBio:'梶井基次郎（1901–1932）。病と向き合いながら、感覚的で透明な短編を遺した新感覚派の作家。', openingText:'えたいの知れない不吉な塊が私の心を始終圧えつけていた。', dummyStats:'読んでみる 49% / あとで読む 51%' },
+      { title:'高瀬舟', author:'森鴎外', summary:'罪人を運ぶ舟で、役人は安楽死を選んだ男の話を聞く。生と死、そして幸福の尺度を静かに問う短編。', authorBio:'森鴎外（1862–1922）。軍医・翻訳者・小説家。近代日本文学に知性と歴史意識を持ち込んだ。', openingText:'高瀬舟は京都の高瀬川を上下する小舟である。徳川時代には罪人が遠島を申し渡されると、本人の親類が牢屋敷に呼び出されて、永の暇乞をすることを許された。', dummyStats:'読んでみる 32% / あとで読む 68%' },
+      { title:'桜の森の満開の下', author:'坂口安吾', summary:'山賊と女、満開の桜。美しさが恐怖へ反転する、妖しく残酷な幻想譚。', authorBio:'坂口安吾（1906–1955）。戦後の無頼派を代表する作家。常識の外側から人間を見つめた。', openingText:'桜の花が咲くと人々は酒を飲んで歌をうたって、けれども、それは嘘だ。', dummyStats:'読んでみる 61% / あとで読む 39%' },
+      { title:'注文の多い料理店', author:'宮沢賢治', summary:'狩りに出た二人の紳士が、山奥の西洋料理店へ迷い込む。童話の顔をした、少し怖い逆転劇。', authorBio:'宮沢賢治（1896–1933）。詩人・童話作家。科学と信仰、土地の言葉を独自の物語へ織り込んだ。', openingText:'二人の若い紳士が、すっかりイギリスの兵隊のかたちをして、ぴかぴかする鉄砲をかついで、白熊のような犬を二匹つれて、だいぶ山奥の、木の葉のかさかさしたとこを、こんなことを云いながら、歩いておりました。', dummyStats:'読んでみる 54% / あとで読む 46%' },
+      { title:'夢十夜', author:'夏目漱石', summary:'百年待つ女、運慶、子どもを背負う男。十の夢が、奇妙で美しい余韻だけを残していく連作。', authorBio:'夏目漱石（1867–1916）。ユーモアと深い心理描写を併せ持つ、日本文学の大きな柱。', openingText:'こんな夢を見た。腕組をして枕元に坐っていると、仰向きに寝た女が、静かな声で、もう死にますと云う。', dummyStats:'読んでみる 44% / あとで読む 56%' },
+      { title:'藪の中', author:'芥川龍之介', summary:'ひとつの殺人をめぐり、関係者が語る証言はすべて食い違う。真実の輪郭がほどけていく短編。', authorBio:'芥川龍之介（1892–1927）。鋭い知性と簡潔な文体で、古典や歴史を現代の物語に変えた作家。', openingText:'一　木樵りが、檢非違使に問はれたること\nさやうでございます。わたしが死骸を見つけましたのは、今朝の事でございます。', dummyStats:'読んでみる 58% / あとで読む 42%' },
+      { title:'フランケンシュタイン', author:'メアリー・シェリー', summary:'若き科学者が生命を創り出す。しかし創造物は孤独と拒絶のなかで、創造主へ復讐を誓う。', authorBio:'メアリー・シェリー（1797–1851）。イギリスの小説家。19歳で近代SFの原型とされる本作を書いた。', openingText:'十二月十一日、十七…\n私の手紙がイギリスへ着くころには、私は北極海の氷のなかにいるだろう。', dummyStats:'読んでみる 47% / あとで読む 53%' },
+      { title:'黄色い壁紙', author:'シャーロット・パーキンス・ギルマン', summary:'療養のため部屋に閉じ込められた女性は、壁紙の模様の奥に誰かの姿を見るようになる。', authorBio:'シャーロット・パーキンス・ギルマン（1860–1935）。アメリカの作家・思想家。女性の自立を鋭く描いた。', openingText:'ジョンと私は、夏のあいだ、先祖伝来の屋敷を借りた。植民地時代の邸宅で、幽霊屋敷とでもいえそうな場所だ。', dummyStats:'読んでみる 66% / あとで読む 34%' },
+      { title:'黒猫', author:'エドガー・アラン・ポー', summary:'主人公は妻と幸せに暮らし、飼い猫のプルートォを可愛がっていたが、酒におぼれるようになるうちに、次第にノイローゼになり、猫を殺したあげく、ついには妻まで殺してしまう。過度の飲酒がもたらす精神の荒廃を、黒猫に象徴させて描く。', authorBio:'エドガー・アラン・ポー（1809–1849）。アメリカの詩人・小説家。推理小説と怪奇小説の礎を築いた。', openingText:'これから書こうとしている、とても奇妙で、しかし家庭的な一連の出来事について、私は信じてもらえるとは期待していない。', dummyStats:'読んでみる 55% / あとで読む 45%' },
+      { title:'走れメロス', author:'太宰治', summary:'友を救うため、メロスは処刑の約束を背負って走る。信頼への疑いと、それでも人を信じる意志を描く短編。', authorBio:'太宰治（1909–1948）。人間の弱さや可笑しみを、痛みとユーモアを交えて描いた作家。', openingText:'メロスは激怒した。必ず、かの邪智暴虐の王を除かなければならぬと決意した。', dummyStats:'読んでみる 51% / あとで読む 49%' },
+      { title:'女生徒', author:'太宰治', summary:'一人の少女の一日を、揺れ続ける独白でたどる。世界への期待と自己嫌悪が、瑞々しく交差する。', authorBio:'太宰治（1909–1948）。人間の弱さや可笑しみを、痛みとユーモアを交えて描いた作家。', openingText:'朝、眼をさますときの気持ちは、面白い。', dummyStats:'読んでみる 43% / あとで読む 57%' },
+      { title:'ごん狐', author:'新美南吉', summary:'いたずら好きの小狐ごんは、兵十の暮らしを陰から助けはじめる。すれ違いが残す、静かで痛い童話。', authorBio:'新美南吉（1913–1943）。愛知県出身の童話作家。短い生涯で、人と自然の切ない関係を描いた。', openingText:'これは、私が小さいときに、村の茂平というおじいさんからきいたお話です。', dummyStats:'読んでみる 48% / あとで読む 52%' },
+      { title:'瓶詰地獄', author:'夢野久作', summary:'無人島に取り残された兄妹から届く、三通の瓶詰めの手紙。愛情と狂気が、救いのない運命へ変わる怪奇譚。', authorBio:'夢野久作（1889–1936）。探偵小説・幻想小説で独自の世界を築いた作家。', openingText:'拝啓。突然このような手紙を差上げます無礼をお許し下さい。', dummyStats:'読んでみる 69% / あとで読む 31%' },
+      { title:'人面疽', author:'谷崎潤一郎', summary:'男の背中に現れた不気味な腫物は、やがて人の顔のように変化していく。肉体と欲望をめぐる初期怪奇小説。', authorBio:'谷崎潤一郎（1886–1965）。耽美と伝統美を追究し、日本文学に濃密な官能性をもたらした。', openingText:'今から十年ほど前の事である。', dummyStats:'読んでみる 62% / あとで読む 38%' },
+      { title:'刺青', author:'谷崎潤一郎', summary:'腕利きの彫師・清吉は、理想の女の肌に刺青を刻もうとする。美と支配の関係が反転する妖艶な短編。', authorBio:'谷崎潤一郎（1886–1965）。耽美と伝統美を追究し、日本文学に濃密な官能性をもたらした。', openingText:'其れはまだ人々が「愚」と云う貴い徳を持って居て、世の中が今のように激しく軋み合わない時分であった。', dummyStats:'読んでみる 59% / あとで読む 41%' },
+      { title:'舞姫', author:'森鴎外', summary:'ドイツ留学中の官僚・太田豊太郎は、踊り子エリスと恋に落ちる。出世と愛のあいだで選ぶ近代恋愛小説。', authorBio:'森鴎外（1862–1922）。軍医・翻訳者・小説家。近代日本文学に知性と歴史意識を持ち込んだ。', openingText:'石炭をば早や積み果てつ。中等室の卓のほとりはいと静にて、熾熱燈の光の晴れがましきも徒なり。', dummyStats:'読んでみる 36% / あとで読む 64%' },
+      { title:'風立ちぬ', author:'堀辰雄', summary:'病に揺らぐ恋人と高原の療養地で過ごす「私」。喪失の予感のなかで、生の美しさを見つめる抒情小説。', authorBio:'堀辰雄（1904–1953）。詩的で繊細な文体により、昭和文学を代表する作家の一人となった。', openingText:'風立ちぬ、いざ生きめやも。', dummyStats:'読んでみる 39% / あとで読む 61%' },
+      { title:'山の音', author:'川端康成', summary:'老いを意識しはじめた信吾は、家族のひずみと、遠い山から響くような不穏な音に耳を澄ます。', authorBio:'川端康成（1899–1972）。ノーベル文学賞を受賞した小説家。美と孤独を静謐な文章で描いた。', openingText:'信吾は夜中に山の音を聞いた。', dummyStats:'読んでみる 34% / あとで読む 66%' },
+      { title:'耳なし芳一の話', author:'小泉八雲', summary:'琵琶法師・芳一は平家の亡霊の前で語るうち、怪異の世界へ引き込まれていく。日本怪談の名作。', authorBio:'小泉八雲（1850–1904）。ギリシャ生まれの作家。日本に帰化し、各地の怪談や民話を世界へ伝えた。', openingText:'耳なし芳一の話は、平家一門の亡霊にまつわる物語として、長く語り伝えられてきた。', dummyStats:'読んでみる 65% / あとで読む 35%' },
+      { title:'蜘蛛の糸', author:'芥川龍之介', summary:'極楽の蓮池から、釈迦は地獄で苦しむ犍陀多を見つける。救いを独り占めしようとする心を描く寓話。', authorBio:'芥川龍之介（1892–1927）。鋭い知性と簡潔な文体で、古典や歴史を現代の物語に変えた作家。', openingText:'ある日の事でございます。お釈迦様は極楽の蓮池のふちを、独りでぶらぶら御歩きになっていらっしゃいました。', dummyStats:'読んでみる 56% / あとで読む 44%' },
+      { title:'金閣寺', author:'三島由紀夫', summary:'吃音を抱える青年・溝口は、絶対的な美としての金閣に魅入られる。美への執着が破壊へ向かう長編。', authorBio:'三島由紀夫（1925–1970）。小説・戯曲・評論で戦後文学を牽引した作家。', openingText:'幼時から父は、私によく、金閣のことを語った。', dummyStats:'読んでみる 45% / あとで読む 55%' },
+      { title:'不思議の国のアリス', author:'ルイス・キャロル', summary:'退屈な午後、少女アリスは白うさぎを追って穴へ落ちる。言葉遊びと奇妙な論理が広がる幻想譚。', authorBio:'ルイス・キャロル（1832–1898）。数学者・写真家でもあったイギリスの作家。', openingText:'アリスは土手の上で姉のそばにすわっていたが、何もすることがなくて、だんだん退屈してきた。', dummyStats:'読んでみる 53% / あとで読む 47%' },
+      { title:'ジキル博士とハイド氏', author:'ロバート・ルイス・スティーヴンソン', summary:'善良な医師ジキルは、薬によって別人格ハイドへ変身する。人間の二面性を描くゴシック小説。', authorBio:'ロバート・ルイス・スティーヴンソン（1850–1894）。冒険小説と怪奇小説で知られるスコットランドの作家。', openingText:'ユタスン氏は、いかにも無愛想な顔つきをした法律家であった。', dummyStats:'読んでみる 58% / あとで読む 42%' },
+      { title:'クリスマス・キャロル', author:'チャールズ・ディケンズ', summary:'守銭奴スクルージのもとに、三人の精霊が訪れる。一夜の旅を通じて、他者と生きる喜びを取り戻す。', authorBio:'チャールズ・ディケンズ（1812–1870）。ヴィクトリア朝イギリスを代表する小説家。', openingText:'マーレイは死んでいた。これは最初に断っておかなければならない。', dummyStats:'読んでみる 46% / あとで読む 54%' },
+      { title:'老人と海', author:'アーネスト・ヘミングウェイ', summary:'老漁師サンチャゴは、孤独な海で巨大なカジキと向き合う。敗北のなかにある尊厳を描く中編。', authorBio:'アーネスト・ヘミングウェイ（1899–1961）。簡潔で力強い文体を確立したアメリカの作家。', openingText:'老人は、メキシコ湾流に小舟を浮かべて独りで漁をしていた。', dummyStats:'読んでみる 42% / あとで読む 58%' },
+      { title:'城の崎にて', author:'志賀直哉', summary:'事故から回復した「自分」は、城崎の温泉地で小さな生き物の死を見つめる。生と死の距離を静かに考える短編。', authorBio:'志賀直哉（1883–1971）。簡潔で澄んだ文体から「小説の神様」と呼ばれた作家。', openingText:'山手線の電車に跳飛ばされて怪我をした。', dummyStats:'読んでみる 37% / あとで読む 63%' },
+      { title:'たけくらべ', author:'樋口一葉', summary:'東京・下谷の町で育つ美登利と信如。大人になる手前の少年少女の、届かない思いを描く近代文学の名作。', authorBio:'樋口一葉（1872–1896）。短い生涯のなかで、明治の市井を鮮やかに描いた作家。', openingText:'廻れば大門の見返り柳いと長けれど、', dummyStats:'読んでみる 41% / あとで読む 59%' },
+      { title:'蒲団', author:'田山花袋', summary:'妻子ある作家・時雄は、弟子の女学生に抱く思いを抑えきれない。欲望と自己欺瞞をむき出しにした自然主義小説。', authorBio:'田山花袋（1872–1930）。自然主義文学を代表する小説家。', openingText:'時雄は、病後の疲れがまだ残っているような気がしていた。', dummyStats:'読んでみる 33% / あとで読む 67%' },
+      { title:'夜長姫と耳男', author:'坂口安吾', summary:'美しい夜長姫に仕える耳男は、常識の外側にある愛と残酷さに触れていく。古代を舞台にした濃密な幻想譚。', authorBio:'坂口安吾（1906–1955）。戦後の無頼派を代表する作家。常識の外側から人間を見つめた。', openingText:'昔、飛騨の国に、耳男という大工がいた。', dummyStats:'読んでみる 64% / あとで読む 36%' },
+      { title:'オズの魔法使い', author:'ライマン・フランク・ボーム', summary:'竜巻で異国へ飛ばされたドロシーは、家へ帰るために仲間と黄色い道を進む。希望と友情の冒険譚。', authorBio:'ライマン・フランク・ボーム（1856–1919）。『オズ』シリーズで知られるアメリカの児童文学作家。', openingText:'ドロシーはカンザスの大草原のまん中に住んでいました。', dummyStats:'読んでみる 50% / あとで読む 50%' },
+      { title:'宝島', author:'ロバート・ルイス・スティーヴンソン', summary:'少年ジムは一枚の宝の地図を手に入れ、海賊たちが待つ島へ出航する。冒険小説の原型。', authorBio:'ロバート・ルイス・スティーヴンソン（1850–1894）。冒険小説と怪奇小説で知られるスコットランドの作家。', openingText:'スミレット提督と、老いた船員ビリー・ボーンズのことから始めよう。', dummyStats:'読んでみる 55% / あとで読む 45%' },
+      { title:'ドラキュラ', author:'ブラム・ストーカー', summary:'トランシルヴァニアの伯爵ドラキュラをめぐり、日記と手紙が恐怖の輪郭を描き出すゴシック小説。', authorBio:'ブラム・ストーカー（1847–1912）。アイルランドの作家。吸血鬼ドラキュラ像を決定づけた。', openingText:'五月三日。ビストリッツを発って、翌朝ブクラレストへ着く予定である。', dummyStats:'読んでみる 61% / あとで読む 39%' },
+      { title:'若草物語', author:'ルイーザ・メイ・オルコット', summary:'南北戦争期、マーチ家の四姉妹はそれぞれの夢や迷いを抱えて成長していく。姉妹の時間を描く家庭小説。', authorBio:'ルイーザ・メイ・オルコット（1832–1888）。アメリカの作家。少女たちの自立を生き生きと描いた。', openingText:'クリスマスなのにプレゼントがないなんて、なんて悲しいの。', dummyStats:'読んでみる 47% / あとで読む 53%' },
+      { title:'ドリアン・グレイの肖像', author:'オスカー・ワイルド', summary:'美青年ドリアンは、肖像画だけが老いていくことを願う。美と快楽への欲望が魂を蝕む物語。', authorBio:'オスカー・ワイルド（1854–1900）。機知に富む戯曲と耽美的な小説で知られるアイルランドの作家。', openingText:'画家バジル・ホールウォードは、ある日、友人のヘンリー卿を自分のアトリエに招いた。', dummyStats:'読んでみる 60% / あとで読む 40%' },
+      { title:'モンテ・クリスト伯', author:'アレクサンドル・デュマ', summary:'無実の罪で投獄された青年ダンテスは、巨万の富を得て帰還する。復讐と赦しをめぐる大河小説。', authorBio:'アレクサンドル・デュマ（1802–1870）。フランスの大衆小説家。歴史と冒険を華やかに描いた。', openingText:'一八一五年二月二十四日、ノートルダム・ド・ラ・ガルドの見張り台は、三本マストの船が港へ入るのを見つけた。', dummyStats:'読んでみる 52% / あとで読む 48%' }
+    ];
+
+    const KEY = 'classicFateApp_v1';
+    let state = loadState();
+    // 開発中の一度限りのストック回復。履歴は残し、次回以降は実行されません。
+    const STOCK_RESET_VERSION = 'classicFateApp_stockReset_v1';
+    if (!localStorage.getItem(STOCK_RESET_VERSION)) { state.recoveryTimes = []; saveState(); localStorage.setItem(STOCK_RESET_VERSION, 'done'); }
+    let currentBook = null;
+    let currentMode = 'normal';
+    let currentHistoryId = null;
+    let countdownTimer = null;
+    let historyFilter = 'all';
+    let historyQuery = '';
+
+    function todayKey() { const now = new Date(); return `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`; }
+    function defaultState() { return { recoveryTimes: [], history: [], stockDate: todayKey() }; }
+    function loadState() { try { const saved = JSON.parse(localStorage.getItem(KEY)); return saved && Array.isArray(saved.recoveryTimes) && Array.isArray(saved.history) ? saved : defaultState(); } catch { return defaultState(); } }
+    function saveState() { localStorage.setItem(KEY, JSON.stringify(state)); }
+    // 回復予定を過ぎたストックを取り除くことで、残ストックを自動復元します。
+    function refreshStock() { const today = todayKey(); if (!state.stockDate) state.stockDate = today; if (state.stockDate !== today) { state.recoveryTimes = []; state.stockDate = today; } saveState(); updateStockUI(); }
+    function stockCount() { return Math.max(0, 3 - state.recoveryTimes.length); }
+    function consumeStock() { refreshStock(); if (stockCount() <= 0) return false; state.recoveryTimes.push(Date.now()); saveState(); updateStockUI(); return true; }
+    function formatRemaining(ms) { const total = Math.max(0, Math.ceil(ms / 60000)); return `${Math.floor(total / 60)}時間${String(total % 60).padStart(2,'0')}分`; }
+    function updateStockUI() { const count = stockCount(); const badge = document.getElementById('stockBadge'); badge.setAttribute('aria-label', `提案ストック ${count} / 3`); badge.innerHTML = [0,1,2].map(i => `<span class="stock-book ${i < count ? '' : 'empty'}" aria-hidden="true">📖</span>`).join(''); const start = document.getElementById('startButton'); const free = document.getElementById('freeStartButton'); const notice = document.getElementById('countdown'); start.disabled = count === 0; free.hidden = count !== 0; notice.hidden = count !== 0; if (!notice.hidden) notice.textContent = '今日はここまで。明日もおたのしみに。'; }
+    function closeMenu() { const menu = document.getElementById('menuPanel'); const toggle = document.getElementById('menuToggle'); menu.classList.remove('open'); toggle.setAttribute('aria-expanded', 'false'); }
+    function showScreen(id) { closeMenu(); refreshStock(); document.querySelectorAll('.screen').forEach(el => el.classList.toggle('active', el.id === id)); if (id === 'history') renderHistory(); if (id === 'stats') renderStats(); }
+    // Kindle 無料版などの導線もあるため、海外古典を含めた作品群を提案します。
+    const catalog = books;
+    function chooseBook() { const candidates = catalog.filter(book => !currentBook || book.title !== currentBook.title); currentBook = candidates[Math.floor(Math.random() * candidates.length)] || catalog[0]; renderProposal(); }
+    function renderProposal() { const b = currentBook; const card = document.getElementById('swipeCard'); const title = document.getElementById('proposalTitle'); card.classList.remove('commit-read', 'commit-later', 'dragging'); card.style.transform = ''; card.style.opacity = ''; title.textContent = b.title; title.style.fontSize = b.title.length > 8 ? 'clamp(24px, 7.2vw, 32px)' : ''; document.getElementById('proposalAuthor').textContent = b.author; document.getElementById('proposalSummary').textContent = b.summary; document.getElementById('proposalBio').textContent = b.authorBio; document.getElementById('proposalStats').textContent = b.dummyStats; document.getElementById('workSearchLink').href = `https://www.google.com/search?q=${encodeURIComponent(`${b.title} ${b.author} 作品 解説`)}`; document.getElementById('authorSearchLink').href = `https://www.google.com/search?q=${encodeURIComponent(`${b.author} 経歴 代表作`)}`; document.getElementById('accordion').classList.remove('open'); document.getElementById('detailToggle').textContent = '詳細を見る'; const bookCard = document.querySelector('.book-card'); bookCard.style.animation = 'none'; void bookCard.offsetWidth; bookCard.style.animation = ''; }
+    function beginProposal(mode) { refreshStock(); if (mode === 'normal' && stockCount() === 0) return; currentMode = mode; showScreen('stage'); let n = 3; const stageText = document.getElementById('stageText'); stageText.textContent = n; const interval = setInterval(() => { n--; stageText.textContent = n > 0 ? n : '…'; }, 1000); setTimeout(() => { clearInterval(interval); chooseBook(); showScreen('proposal'); }, 3000); }
+    function addHistory(action) { const entry = { id: Date.now() + Math.random(), selectedAt: new Date().toISOString(), mode: currentMode, title: currentBook.title, author: currentBook.author, action, status:'未読' }; state.history.unshift(entry); saveState(); return entry.id; }
+    function act(action) { if (!currentBook) return; if (currentMode === 'normal' && !consumeStock()) { showScreen('home'); return; } currentHistoryId = addHistory(action); if (action === '読んでみる') { showDetail(); return; } if (currentMode === 'free' || stockCount() > 0) { chooseBook(); showScreen('proposal'); } else { showScreen('home'); } }
+    const openingMore = {
+      '人間失格':'これは子供の群れの中に混じって写っている一葉である。しかも、それは、いわゆる子供らしい笑顔をしていない。\n\n両手を胸のあたりにあげて、組み、いわゆる「子供の群れ」のなかにあって、ただ一人、奇妙な顔をして立っている。',
+      'こころ':'私はその人を常に先生と呼んでいた。だからここでもただ先生と書くだけで本名は打ち明けない。\n\nこれは世間を憚かる遠慮というよりも、その方が私にとって自然だからである。私はその人の記憶を呼び起こすたびに、すぐ「先生」といいたくなる。',
+      '羅生門':'下人が雨やみを待っていた。広い門の下には、この男のほかに誰もいない。\n\nもっとも、所々丹塗の剥げた、大きな円柱に、蟋蟀が一匹とまっている。羅生門が、朱雀大路にある以上は、この男のほかにも、雨やみをする市女笠や揉烏帽子が、もう二三人はありそうなものである。',
+      '檸檬':'えたいの知れない不吉な塊が私の心を始終圧えつけていた。\n\n焦燥と言おうか、嫌悪と言おうか――酒を飲んだあとに宿酔があるように、酒を毎日飲んでいると宿酔に相当した時期がやって来る。'
+    };
+    // アプリ内読書用の初期棚。本文データは作品ごとに出典とともに追加します。
+    const readerTexts = {
+      '人間失格': `私は、その男の写真を三葉、見たことがある。\n\n一葉は、その男の、幼少時代、とでもいうべきであろうか、十歳前後の写真であった。\n\nこれは子供の群れの中に混じって写っている一葉である。しかも、それは、いわゆる子供らしい笑顔をしていない。\n\n両手を胸のあたりにあげて、組み、いわゆる「子供の群れ」のなかにあって、ただ一人、奇妙な顔をして立っている。`,
+      'こころ': `私はその人を常に先生と呼んでいた。だからここでもただ先生と書くだけで本名は打ち明けない。\n\nこれは世間を憚かる遠慮というよりも、その方が私にとって自然だからである。私はその人の記憶を呼び起こすたびに、すぐ「先生」といいたくなる。\n\n私が先生と知り合いになったのは鎌倉である。\n\nその時私はまだ若い学生であった。暑中休暇を利用して海へ遊びに行った友達から、ぜひ来いという端書を受け取った。`,
+      '羅生門': `ある日の暮方の事である。一人の下人が、羅生門の下で雨やみを待っていた。\n\n広い門の下には、この男のほかに誰もいない。ただ、所々丹塗の剥げた、大きな円柱に、蟋蟀が一匹とまっている。\n\n羅生門が、朱雀大路にある以上は、この男のほかにも、雨やみをする市女笠や揉烏帽子が、もう二三人はありそうなものである。それが、この男のほかには誰もいない。\n\n何故かというと、この二三年、京都には、地震とか辻風とか火事とか飢饉とかいう災がつづいて起った。`,
+      '檸檬': `えたいの知れない不吉な塊が私の心を始終圧えつけていた。\n\n焦燥と言おうか、嫌悪と言おうか――酒を飲んだあとに宿酔があるように、酒を毎日飲んでいると宿酔に相当した時期がやって来る。\n\nそれが来たのだ。これはちょっといけなかった。\n\n毎日悪夢を見ているような気持になった。`,
+      '夢十夜': `こんな夢を見た。\n\n腕組をして枕元に坐っていると、仰向きに寝た女が、静かな声で、もう死にますと云う。\n\n女は長い髪を枕に敷いて、輪郭の柔らかな瓜実顔をその中に横たえている。真白な頬の底に温かい血の色が程よく差して、唇の色は無論赤い。\n\nもう死にますと云いながら、女は少しも動かなかった。`,
+      '走れメロス': `メロスは激怒した。\n\n必ず、かの邪智暴虐の王を除かなければならぬと決意した。\n\nメロスには政治がわからぬ。メロスは、村の牧人である。笛を吹き、羊と遊んで暮して来た。\n\nけれども邪悪に対しては、人一倍に敏感であった。`,
+      '蜘蛛の糸': `ある日の事でございます。\n\nお釈迦様は極楽の蓮池のふちを、独りでぶらぶら御歩きになっていらっしゃいました。\n\n池の中に咲いている蓮の花は、みんな玉のようにまっ白で、そのまん中にある金色の蕊からは、何とも云えない好い匂いが、絶間なくあたりへ溢れております。\n\n極楽は丁度朝なのでございましょう。`,
+      '注文の多い料理店': `二人の若い紳士が、すっかりイギリスの兵隊のかたちをして、ぴかぴかする鉄砲をかついで、白熊のような犬を二匹つれて、だいぶ山奥の、木の葉のかさかさしたとこを、こんなことを云いながら、歩いておりました。\n\n「ぜんたい、ここらの山は怪しからんね。鳥も獣も一疋も居やがらん。なんでも構わないから、早くタンタアーンと、やって見たいもんだなあ。」\n\n「鹿の黄いろな横っ腹などに、二三発お見舞い申したら、ずいぶん痛快だろうねえ。」`,
+      'ごん狐': `これは、私が小さいときに、村の茂平というおじいさんからきいたお話です。\n\nむかしは、私たちの村の近くの、中山というところに、いっしょに小さな城があって、中山さまというおとのさまがいらっしゃったそうです。\n\nその中山から、少しはなれた山の中に、「ごん狐」という狐がいました。\n\nごんは、ひとりぼっちの小狐で、しだのいっぱいしげった森の中に、穴をほって住んでいました。`,
+      '山月記': `隴西の李徴は博学才穎、天宝の末年、若くして名を虎榜に連ね、ついで江南尉に補せられたが、性、狷介、自ら恃むところ頗る厚く、賤吏に甘んずるを潔しとしなかった。\n\nいくばくもなく官を退いた。故山、虢略に帰臥し、人と交を絶って、ひたすら詩作に耽った。\n\n下吏となって長く膝を俗悪な大官の前に屈するよりは、詩家としての名を成す方が、死ぬほどに望ましかったのである。`
+    };
+    const readerSources = {
+      '人間失格':'https://www.aozora.gr.jp/cards/000035/card301.html',
+      'こころ':'https://www.aozora.gr.jp/cards/000148/card773.html',
+      '羅生門':'https://www.aozora.gr.jp/cards/000879/card127.html',
+      '檸檬':'https://www.aozora.gr.jp/cards/000074/card424.html',
+      '夢十夜':'https://www.aozora.gr.jp/cards/000148/card799.html',
+      '走れメロス':'https://www.aozora.gr.jp/',
+      '蜘蛛の糸':'https://www.aozora.gr.jp/',
+      '注文の多い料理店':'https://www.aozora.gr.jp/',
+      'ごん狐':'https://www.aozora.gr.jp/',
+      '山月記':'https://www.aozora.gr.jp/'
+    };
+    // 提案の余韻をそのまま読書のきっかけにする、作品ごとの一言。
+    const recommendations = {
+      '人間失格':'自分の弱さを直視する物語が読みたい夜に。重さのある文章を、少しずつ味わいたいときに。',
+      'こころ':'人との距離や、言えなかった気持ちについて考えたいときに。静かな長編へ入りたい日に。',
+      '羅生門':'短い時間で、倫理の足元が揺らぐ感覚を味わいたいときに。',
+      '銀河鉄道の夜':'眠る前に、少し遠くへ旅したいときに。やさしく不思議な物語を読みたい夜に。',
+      '変身':'日常が急に異質に見える物語を読みたいときに。奇妙な読後感を求める日に。',
+      '吾輩は猫である':'人間社会を少し離れた場所から眺めたいときに。笑える古典を開きたい日に。',
+      '山月記':'才能や自意識にまつわる苦さを、短編で味わいたいときに。',
+      '檸檬':'気分が沈みがちな日に。鮮やかな言葉で、世界の見え方を変えたいときに。',
+      '高瀬舟':'正解のない問いを、静かに考えたいときに。短く深い話を読みたい日に。',
+      '桜の森の満開の下':'美しいものが少し怖く感じられる物語を読みたいときに。',
+      '注文の多い料理店':'少し怖くてユーモラスな物語を、気軽に楽しみたいときに。',
+      '夢十夜':'眠る前に、理屈ではない余韻を持ち帰りたいときに。',
+      '藪の中':'ひとつの出来事を多角的に見つめたいときに。ミステリーの原型に触れたい日に。',
+      'フランケンシュタイン':'創ることの責任をめぐる、重厚な物語に浸りたいときに。',
+      '黄色い壁紙':'息苦しさのある心理小説を、短い時間で読みたいときに。',
+      '黒猫':'不穏で濃い怪奇短編を読みたい夜に。',
+      '走れメロス':'人を信じることについて、まっすぐな物語を読みたいときに。',
+      '女生徒':'自分の心の揺れを言葉にしてほしいときに。',
+      'ごん狐':'切ない童話を読み、静かな余韻に浸りたいときに。',
+      '瓶詰地獄':'救いのない美しい怪談を読みたい夜に。',
+      '人面疽':'身体の不気味さと欲望が交わる物語を読みたいときに。',
+      '刺青':'美と支配が反転する、妖しい短編を味わいたいときに。',
+      '舞姫':'出世と愛のあいだで揺れる人間を見つめたいときに。',
+      '風立ちぬ':'喪失の気配とともに、生の美しさを味わいたいときに。',
+      '山の音':'家族や老いについて、静かな文章で考えたいときに。',
+      '耳なし芳一の話':'日本の怪談らしい怖さを、すっと味わいたい夜に。',
+      '蜘蛛の糸':'短い寓話で、自分の心を少し振り返りたいときに。',
+      '金閣寺':'美しさに取り憑かれる感覚を、濃密な文章で読みたいときに。',
+      '不思議の国のアリス':'理屈がほどける、軽やかな幻想の世界へ行きたいときに。',
+      'ジキル博士とハイド氏':'人の二面性をめぐるゴシックな物語を読みたいときに。',
+      'クリスマス・キャロル':'気持ちを少しあたため直す物語が読みたいときに。',
+      '老人と海':'静かな闘いと尊厳の物語を、まっすぐ読みたいときに。',
+      '城の崎にて':'生き物の死を通して、生と死を考えたいときに。',
+      'たけくらべ':'大人になる手前の、言葉にならない気持ちに触れたいときに。',
+      '蒲団':'人の弱さを容赦なく描く近代小説を読みたいときに。',
+      '夜長姫と耳男':'古代のようで夢のような、濃い幻想譚に浸りたいときに。',
+      'オズの魔法使い':'明るい冒険と仲間の物語で、気分を変えたいときに。',
+      '宝島':'純粋に冒険したい気分の日に。物語にぐいぐい引っ張られたいときに。',
+      'ドラキュラ':'日記をめくるように、じわじわ迫る恐怖を楽しみたいときに。',
+      '若草物語':'姉妹や家族の時間を、あたたかく読みたいときに。',
+      'ドリアン・グレイの肖像':'美しさと堕落の危うさを、華やかな文章で味わいたいときに。',
+      'モンテ・クリスト伯':'長い復讐劇の入口に立ちたいときに。大河小説を始めたい日に。'
+    };
+    let readerFontSize = Number(localStorage.getItem('classicReaderFontSize')) || 18;
+    function showDetail() { const b = currentBook; document.getElementById('detailTitle').textContent = b.title; document.getElementById('detailAuthor').textContent = b.author; document.getElementById('detailSummary').textContent = b.summary; document.getElementById('detailOpening').textContent = b.openingText; document.getElementById('detailRecommendation').textContent = recommendations[b.title] || '少しだけ日常から離れたいとき、短い時間でも物語の世界に入りたいときにおすすめです。'; document.getElementById('detailAuthorBio').textContent = b.authorBio; document.getElementById('detailUserStats').textContent = b.dummyStats; document.getElementById('detailPageMore').classList.remove('open'); document.getElementById('detailPageMoreButton').textContent = '詳細を見る'; const query = encodeURIComponent(`${b.title} ${b.author}`); const workSearch = `https://www.google.com/search?q=${encodeURIComponent(`${b.title} ${b.author} 作品 解説`)}`; const authorSearch = `https://www.google.com/search?q=${encodeURIComponent(`${b.author} 経歴 代表作`)}`; const aozoraSearch = `https://www.google.com/search?q=${encodeURIComponent(`site:aozora.gr.jp ${b.title} ${b.author}`)}`; document.getElementById('aozoraLink').href = aozoraSearch; document.getElementById('kindleLink').href = `https://www.amazon.co.jp/s?k=${query}&i=digital-text`; document.getElementById('workSearchLink').href = workSearch; document.getElementById('authorSearchLink').href = authorSearch; document.getElementById('detailWorkSearchLink').href = workSearch; document.getElementById('detailAuthorSearchLink').href = authorSearch; document.getElementById('readerButton').hidden = !readerTexts[b.title]; document.getElementById('freeMoreButton').hidden = currentMode !== 'free'; showScreen('detail'); }
+    function showReader() { const b = currentBook; const body = document.getElementById('readerBody'); document.getElementById('readerTitle').textContent = b.title; document.getElementById('readerAuthor').textContent = b.author; body.innerHTML = readerTexts[b.title].split(/\n\n+/).map(p => `<p>${escapeHtml(p)}</p>`).join('') + `<footer class="reader-credit">試し読み（アプリ内収録）<br>作品：${escapeHtml(b.title)} ／ 著者：${escapeHtml(b.author)}<br>出典：<a href="${readerSources[b.title]}" target="_blank" rel="noopener">青空文庫 作品カード</a><br>続きの本文は、出典情報を保ったうえで順次このリーダーへ収録します。</footer>`; body.style.fontSize = `${readerFontSize}px`; const saved = Number(localStorage.getItem(`classicReaderPosition_${b.title}`)) || 0; requestAnimationFrame(() => { body.scrollTop = saved; }); showScreen('reader'); }
+    function renderHistory() { const list = document.getElementById('historyList'); document.querySelectorAll('[data-filter]').forEach(button => button.classList.toggle('active', button.dataset.filter === historyFilter)); const query = historyQuery.trim().toLowerCase(); const filtered = state.history.filter(item => { const kind = historyFilter === 'read' ? item.action === '読んでみる' : historyFilter === 'later' ? item.action === 'あとで読む' : historyFilter === 'finished' ? item.status === '読了' : true; const matches = !query || `${item.title} ${item.author}`.toLowerCase().includes(query); return kind && matches; }); if (!filtered.length) { list.innerHTML = `<p class="empty">${state.history.length ? '条件に合う作品はありません。' : 'まだ選択の履歴はありません。<br>最初の一冊を決めてみましょう。'}</p>`; return; } list.innerHTML = filtered.map(item => `<article class="history-item"><div class="history-head"><span>${item.mode === 'normal' ? '✨ 通常モード' : '🔍 無制限モード'}</span><div class="history-side"><span>${new Date(item.selectedAt).toLocaleString('ja-JP')}</span>${item.status === '読了' ? '<span class="read-mark">✓ 読んだ</span>' : ''}</div></div><div class="history-book">${escapeHtml(item.title)}<button class="favorite-button ${item.favorite ? 'active' : ''}" data-favorite-id="${item.id}" aria-label="お気に入り">${item.favorite ? '★' : '☆'}</button></div><div class="history-meta">${escapeHtml(item.author)} · ${item.action}</div><button class="small-button" data-read-id="${item.id}">${item.status === '読了' ? '未読に戻す' : '読んだ'}</button></article>`).join(''); }
+    function renderStats() { const normal = state.history.filter(x => x.mode === 'normal'); const read = normal.filter(x => x.action === '読んでみる').length; const later = normal.filter(x => x.action === 'あとで読む').length; const finished = normal.filter(x => x.status === '読了').length; const total = normal.length; const ratio = n => total ? Math.round(n / total * 100) : 0; document.getElementById('statsGrid').innerHTML = `<div class="stat"><div class="stat-label">読んでみる</div><div class="stat-value">${read}</div><div class="stat-label">${ratio(read)}%</div><button class="shelf-button" data-history-filter="read">本棚表示</button></div><div class="stat"><div class="stat-label">あとで読む</div><div class="stat-value">${later}</div><div class="stat-label">${ratio(later)}%</div><button class="shelf-button" data-history-filter="later">本棚表示</button></div><div class="stat"><div class="stat-label">読んだ</div><div class="stat-value">${finished}</div><div class="stat-label">読了済み</div><button class="shelf-button" data-history-filter="finished">本棚表示</button></div><div class="stat"><div class="stat-label">これまでに選択した回数</div><div class="stat-value">${total}</div><div class="stat-label">通常モードのみ</div></div>`; }
+    function escapeHtml(value) { return String(value).replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c])); }
+    function exportCsv() { const rows = [['選択日時','モード','タイトル','著者名','アクション'], ...state.history.map(x => [new Date(x.selectedAt).toLocaleString('ja-JP'), x.mode === 'normal' ? '通常' : '制限なし', x.title, x.author, x.action])]; const csv = '\uFEFF' + rows.map(row => row.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\r\n'); const blob = new Blob([csv], {type:'text/csv;charset=utf-8'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'classics-history.csv'; a.click(); URL.revokeObjectURL(url); }
+
+    document.getElementById('startButton').addEventListener('click', () => beginProposal('normal'));
+    document.getElementById('freeStartButton').addEventListener('click', () => beginProposal('free'));
+    document.getElementById('detailToggle').addEventListener('click', () => { const el = document.getElementById('accordion'); const open = el.classList.toggle('open'); document.getElementById('detailToggle').textContent = open ? '詳細を閉じる' : '詳細を見る'; });
+    document.getElementById('detailPageMoreButton').addEventListener('click', () => { const el = document.getElementById('detailPageMore'); const open = el.classList.toggle('open'); document.getElementById('detailPageMoreButton').textContent = open ? '詳細を閉じる' : '詳細を見る'; });
+    document.getElementById('readerButton').addEventListener('click', showReader);
+    document.getElementById('changeToLaterButton').addEventListener('click', () => { const item = state.history.find(entry => String(entry.id) === String(currentHistoryId)); if (!item) return; if (item.action === 'あとで読む') { item.action = '読んでみる'; saveState(); showDetail(); return; } item.action = 'あとで読む'; item.status = '未読'; saveState(); if (currentMode === 'free' || stockCount() > 0) { chooseBook(); showScreen('proposal'); } else { showScreen('home'); } });
+    document.getElementById('freeMoreButton').addEventListener('click', () => beginProposal('free'));
+    document.getElementById('readerBack').addEventListener('click', () => showScreen('detail'));
+    document.getElementById('readerBody').addEventListener('scroll', e => { if (currentBook) localStorage.setItem(`classicReaderPosition_${currentBook.title}`, String(e.currentTarget.scrollTop)); });
+    document.querySelectorAll('[data-font]').forEach(button => button.addEventListener('click', () => { readerFontSize = Math.max(15, Math.min(24, readerFontSize + Number(button.dataset.font))); localStorage.setItem('classicReaderFontSize', String(readerFontSize)); document.getElementById('readerBody').style.fontSize = `${readerFontSize}px`; }));
+    // 作品カードを右へ払うと「読んでみる」、左へ払うと「あとで読む」です。
+    let swipeStartX = null;
+    const swipeCard = document.getElementById('swipeCard');
+    const swipeOverlay = document.getElementById('swipeOverlay');
+    const swipeOverlayText = document.getElementById('swipeOverlayText');
+    swipeCard.addEventListener('pointerdown', e => { swipeStartX = e.clientX; swipeCard.setPointerCapture(e.pointerId); swipeCard.classList.add('dragging'); swipeOverlay.classList.remove('show', 'later'); });
+    swipeCard.addEventListener('pointermove', e => { if (swipeStartX === null) return; const dx = e.clientX - swipeStartX; swipeCard.style.transform = `translateX(${Math.max(-120, Math.min(120, dx))}px) rotate(${dx / 28}deg)`; swipeCard.style.opacity = String(1 - Math.min(Math.abs(dx) / 420, .35)); const active = Math.abs(dx) > 16; swipeOverlay.classList.toggle('show', active); swipeOverlay.classList.toggle('later', dx < 0); if (active) swipeOverlayText.textContent = dx > 0 ? '読んでみる →' : '← あとで読む'; });
+    function completeSwipe(e) { if (swipeStartX === null) return; const dx = e.clientX - swipeStartX; swipeStartX = null; swipeCard.classList.remove('dragging'); swipeOverlay.classList.remove('show', 'later'); swipeCard.style.transform = ''; swipeCard.style.opacity = ''; if (Math.abs(dx) < 72) return; const action = dx > 0 ? '読んでみる' : 'あとで読む'; swipeCard.classList.add(dx > 0 ? 'commit-read' : 'commit-later'); setTimeout(() => act(action), 160); }
+    swipeCard.addEventListener('pointerup', completeSwipe);
+    swipeCard.addEventListener('pointercancel', completeSwipe);
+    document.getElementById('alreadyButton').addEventListener('click', chooseBook);
+    document.getElementById('csvButton').addEventListener('click', exportCsv);
+    document.getElementById('menuToggle').addEventListener('click', e => { e.stopPropagation(); const menu = document.getElementById('menuPanel'); const open = menu.classList.toggle('open'); e.currentTarget.setAttribute('aria-expanded', String(open)); });
+    document.getElementById('historySearch').addEventListener('input', e => { historyQuery = e.target.value; renderHistory(); });
+    document.getElementById('historyFilters').addEventListener('click', e => { const filter = e.target.closest('[data-filter]')?.dataset.filter; if (filter) { historyFilter = filter; renderHistory(); } });
+    document.addEventListener('click', e => { const screen = e.target.closest('[data-screen]')?.dataset.screen; if (screen) showScreen(screen); const id = e.target.closest('[data-read-id]')?.dataset.readId; if (id) { const item = state.history.find(x => String(x.id) === id); if (item) { item.status = item.status === '読了' ? '未読' : '読了'; saveState(); renderHistory(); } } const favoriteId = e.target.closest('[data-favorite-id]')?.dataset.favoriteId; if (favoriteId) { const item = state.history.find(x => String(x.id) === favoriteId); if (item) { item.favorite = !item.favorite; saveState(); renderHistory(); } } const statsFilter = e.target.closest('[data-history-filter]')?.dataset.historyFilter; if (statsFilter) { historyFilter = statsFilter; historyQuery = ''; document.getElementById('historySearch').value = ''; showScreen('history'); } if (!e.target.closest('#menuPanel')) closeMenu(); });
+    refreshStock(); countdownTimer = setInterval(refreshStock, 30000);
+  </script>
+  <script>
+    // 試し読み棚を拡張。翻訳が複数ある海外・古典思想は、特定の訳文ではなく導入ガイドとして収録します。
+    (() => {
+      const newBooks = [
+        { title:'饗宴', author:'プラトン', summary:'宴席で交わされる「愛とは何か」という対話。欲望、美、知、そして人が他者を求める理由を、複数の声で探る哲学の古典。', authorBio:'プラトン（前427頃–前347頃）。古代ギリシアの哲学者。対話篇を通して、正義・愛・知を考え続けた。', openingText:'アテナイの宴席で、ソクラテスたちは「愛」を称える話を始める。\\n人はなぜ、美しいものや誰かを求めるのか。', dummyStats:'読んでみる 57% / あとで読む 43%' },
+        { title:'幸福について', author:'セネカ', summary:'富や名声に振り回されず、どうすればよく生きられるのか。古代ローマのストア派哲学者が、幸福と徳を結び直す書。', authorBio:'セネカ（前4頃–65）。ローマ帝政期の政治家・ストア派哲学者。手紙や論考で、心の自由を説いた。', openingText:'幸福は、外から与えられる幸運だけにはない。\\n自分の判断をどこに置くかから、セネカの議論は始まる。', dummyStats:'読んでみる 45% / あとで読む 55%' },
+        { title:'孫子', author:'孫武（孫子）', summary:'戦いを力比べではなく、情報・地形・組織・心理を読む技術として捉える兵法書。戦わずして勝つという発想で知られる。', authorBio:'孫子は春秋時代の兵法家と伝えられる。『孫子』十三篇は、後世の軍事・政治・経営思想に大きな影響を与えた。', openingText:'戦いは、始める前の計算からすでに始まっている。\\n勝てる条件を見極めることが、兵法の中心に置かれる。', dummyStats:'読んでみる 63% / あとで読む 37%' },
+        { title:'孟子', author:'孟子', summary:'人には他者をいたわる芽があるのか。諸侯や弟子との対話を通じ、仁政と人間の善性を力強く論じる中国思想の基本書。', authorBio:'孟子（前372頃–前289頃）。戦国時代の儒家思想家。孔子の思想を継ぎ、人の本性は善であると説いた。', openingText:'幼い子が井戸へ落ちそうなら、人は思わず助けようとする。\\n孟子はこの反応に、人の心の出発点を見る。', dummyStats:'読んでみる 54% / あとで読む 46%' },
+        { title:'論語', author:'孔子と弟子たち', summary:'学ぶこと、友と交わること、政治に関わること。孔子と弟子たちの短い言葉が、日常の判断を静かに問い返す。', authorBio:'孔子（前551–前479）。春秋時代の思想家。後世の東アジア思想に大きな影響を与えた儒家の祖。', openingText:'「学んで時にこれを習う」。\\n短い言葉のなかに、知ることを自分の生き方にする感覚が置かれている。', dummyStats:'読んでみる 52% / あとで読む 48%' },
+        { title:'千夜一夜物語', author:'アラブ世界の説話集', summary:'王に語り続けるシェヘラザードの物語のなかに、船乗り、商人、魔法、恋、復讐が無数に枝分かれしていく説話集。', authorBio:'『千夜一夜物語』はアラブ・ペルシア・インドなどの物語が重なって成立したとされる民話集。', openingText:'王の怒りを鎮めるため、シェヘラザードは夜ごとに物語を始める。\\n「続き」を待つ力が、この本の入口になる。', dummyStats:'読んでみる 66% / あとで読む 34%' },
+        { title:'ギルガメシュ叙事詩', author:'古代メソポタミア', summary:'最古級の英雄叙事詩。強大な王ギルガメシュが友エンキドゥと出会い、死を知り、不死を求めて旅に出る。', authorBio:'紀元前2千年紀ごろに粘土板へ記された古代メソポタミアの叙事詩。複数の版が伝わる。', openingText:'強い王は、まだ自分が何を失うのかを知らない。\\n友との出会いが、彼を冒険と悲しみの旅へ向かわせる。', dummyStats:'読んでみる 68% / あとで読む 32%' },
+        { title:'オデュッセイア', author:'ホメロス', summary:'トロイア戦争後、英雄オデュッセウスは故郷への帰還を目指す。海の怪物、魔女、神々を越える長い漂泊の物語。', authorBio:'ホメロスは古代ギリシアの叙事詩人とされる。『イリアス』『オデュッセイア』は西洋文学の源流の一つ。', openingText:'旅をする男のことを、女神よ、私に語ってください。\\n帰る場所を持つ者が、どれほど遠くへ流されるのかという歌が始まる。', dummyStats:'読んでみる 59% / あとで読む 41%' },
+        { title:'神曲', author:'ダンテ・アリギエーリ', summary:'人生の道を見失った語り手が、地獄・煉獄・天国を旅する。罪と救い、愛と知を巨大な詩の宇宙にした作品。', authorBio:'ダンテ（1265–1321）。イタリアの詩人・政治家。俗語で書いた『神曲』により世界文学の頂点の一つとされる。', openingText:'人生の半ばで、私はまっすぐな道を見失い、暗い森にいた。\\nここから、死後の世界をめぐる長い旅が始まる。', dummyStats:'読んでみる 51% / あとで読む 49%' },
+        { title:'君主論', author:'ニッコロ・マキャヴェッリ', summary:'権力を持つ者は、理想だけでなく現実をどう見るべきか。国家を保つ技術を冷徹に考えた政治思想の古典。', authorBio:'マキャヴェッリ（1469–1527）。フィレンツェの外交官・思想家。近代政治学の先駆者とされる。', openingText:'国家を保つには、善意だけでは足りない場面がある。\\n現実の人間を出発点に、政治を考える本。', dummyStats:'読んでみる 56% / あとで読む 44%' }
+      ];
+      const guideTexts = {
+        '饗宴': ['宴会の席で、参加者たちは順番に「愛」をほめたたえる演説をします。ある者は愛を勇気に変える力と呼び、ある者は美しいものを求める欲望だと考えます。ひとつの問いに違う答えが並ぶことが、この本の面白さです。','アリストファネスは、人間はかつて一つの丸い存在だったが、神によって二つに分けられたのだという神話を語ります。だから人は、失った半身を探すように誰かを求めるのだ、と。','ソクラテスは、愛が一人の美しさから始まり、魂、学び、知そのものへ向かう可能性を語ります。答えを覚えるより、自分なら愛をどこまで広げて考えるかを試す本です。'].join('\\n\\n'),
+        '幸福について': ['セネカは、幸福を気分のよさや財産の多さと同じにしません。偶然に手に入るものへ心を預けると、失う怖さにも支配されてしまうからです。','彼は、自分の判断をよく働かせ、正しいと考えることを選べる心に幸福の土台を置きます。外側の出来事をすべて変えられなくても、それへの向き合い方は鍛えられる、と考えます。','これは我慢を勧める本ではありません。富や快楽の主人になるのか、奴隷になるのかを問い直す本です。'].join('\\n\\n'),
+        '孫子': ['『孫子』は、勇敢にぶつかることを最上の戦いとは考えません。敵と味方の力、地形、季節、指揮官、兵の気持ちを比べ、勝てない戦いを避けることから始めます。','有名な「彼を知り己を知れば」という発想も、相手の情報だけを集める話ではありません。自分たちの限界や疲れ、組織の乱れを見誤らないことまで含んでいます。','戦場の本でありながら、準備、観察、撤退の知恵の本でもあります。現代の競争や交渉を考える読者にも、驚くほど具体的に響きます。'].join('\\n\\n'),
+        '孟子': ['孟子は、人間が生まれながらに善い心の「芽」を持つと考えます。誰かの苦しみを見て、計算より先に胸が動くこと。その小さな反応を、育てるべき出発点として見ます。','しかし、よい心があるなら人はいつも善く行動するのでしょうか。芽は放っておけば枯れる。生活や政治が人を追い詰めれば、よい心も働きにくくなると見ています。','だから議論は個人の道徳だけでなく、民が安心して暮らせる政治へ向かいます。人の弱さを前提にしながら、希望を捨てない思想です。'].join('\\n\\n'),
+        '論語': ['『論語』は長い物語ではなく、短い場面と言葉の集まりです。弟子が尋ね、孔子が答え、ときには答えの形を相手ごとに変えます。','学ぶことは、知識を増やすことだけではありません。繰り返して身につけ、友と確かめ、ふるまいへ移すことまでを含みます。だから言葉は短くても、日々の判断へ戻ってきます。','最初から全部を理解しようとせず、引っかかった一章を一つ持ち帰る。その読み方が似合う古典です。'].join('\\n\\n'),
+        '千夜一夜物語': ['王は、裏切られることを恐れ、毎朝新しい妻を処刑する残酷な習慣を続けています。シェヘラザードは自ら王のもとへ行き、夜ごとに物語を語り始めます。','けれど、いちばん面白いところで夜が明けます。王は続きが気になり、処刑を翌日へ延ばす。こうして物語は、語り手の命をつなぐ技術になります。','船乗り、商人、魔法、恋、復讐の話が入れ子のようにつながります。次の話へ移るたび、世界がさらに広がります。'].join('\\n\\n'),
+        'ギルガメシュ叙事詩': ['ギルガメシュは強すぎる王として登場します。人々は彼の力に苦しみ、神々は彼と釣り合う存在として、荒野に生きるエンキドゥを作ります。','二人は激しく争ったあと、かけがえのない友になります。怪物へ挑む冒険は英雄譚のようですが、友の死によって物語の色は変わります。ギルガメシュは、自分もまた死ぬのだと初めて知るのです。','不死を求める旅の先で、彼は答えを簡単には得ません。それでも失うことを知った王が故郷を見つめ直す場面には、人間らしい着地があります。'].join('\\n\\n'),
+        'オデュッセイア': ['戦争に勝ったあとも、オデュッセウスは家へ帰れません。海の神の怒り、誘惑する歌声、記憶を奪う島、巨大な怪物。旅は武力だけでは抜けられない試練の連続です。','彼の武器は知恵と、帰還をあきらめない執念です。一方で故郷では、妻ペネロペが求婚者たちを前に時間を引き延ばしながら待ち続けています。','冒険の連続でありながら、この詩の中心にあるのは「帰る場所をどう守るか」という問いです。'].join('\\n\\n'),
+        '神曲': ['暗い森で道を失った語り手の前に、古代ローマの詩人ウェルギリウスが現れます。彼に導かれ、語り手はまず地獄へ下ります。','そこでは罪が抽象的な言葉ではなく、目に見える風景として置かれます。読む側は他人の罰を見ながら、自分の生き方も問われます。','しかし旅は地獄で終わりません。煉獄を経て天国へ向かう道筋があるからこそ、この作品は見失った道を探し直す本になります。'].join('\\n\\n'),
+        '君主論': ['マキャヴェッリは、政治を「人はこうあるべきだ」という願いだけで考える危うさを指摘します。人は恩知らずにもなり、状況が変われば忠誠を変える。その現実を見ない支配者は国を失う、と彼は考えます。','だからといって、残酷さを無条件に勧めているわけではありません。恐れられること、愛されること、約束を守ること、例外を使うことを、国家を保つための難しい判断として扱います。','読みながら不快になる箇所もあります。その不快さを含め、理想と現実のあいだで政治を考えさせる本です。'].join('\\n\\n')
+      };
+      // データ入力時の改行エスケープを、ここで確実に実際の改行へ変換します。
+      Object.keys(guideTexts).forEach(title => {
+        guideTexts[title] = guideTexts[title].replace(/\\{1,}n/g, '\n');
+      });
+      const extendedGuides = {
+        '人間失格':'写真に写る少年の不自然な笑みから、語り手は人に本当の自分を見せられない感覚へ入っていきます。おどけることで周囲を安心させながら、本人だけが深く孤立している。そのねじれが、この長編の最初の扉です。\\n\\n葉蔵は幼いころから人間を理解できず、怖がっていたことを打ち明けます。暗い告白だけでなく、他人を笑わせる才能もまた彼の生存術として描かれます。','こころ':'先生は多くを語りません。だからこそ、散歩や訪問のたびに小さな沈黙が積み重なります。物語は事件を急ぐより先に、人と人が近づききれない感覚を丁寧に作っていきます。\\n\\nやがて先生が抱える過去が、語り手の青春とも静かにつながっていきます。','羅生門':'雨を避ける下人は、すでに職を失い、どこへ行くべきかも決められません。門の上で出会う老婆との会話は、どちらも生きるためという理屈を持ちながら、正しさの足元を崩していきます。','檸檬':'京都の街を歩く「私」は、果物屋でひとつの檸檬に出会います。冷たい重みと鮮やかな黄が、沈んでいた感覚を少しずつ動かしていく。世界の色が一つ変わるだけで、人が立ち直りかける瞬間をつかまえた作品です。','走れメロス':'妹の結婚式のため三日だけの猶予を願い、親友を人質に置いて村へ戻るメロス。川の氾濫、盗賊、疲労のなかで、約束を守るための走りが始まります。疑いと恥と友情が、まっすぐな物語を何度も試します。','山月記':'詩人として名を残そうとする李徴は、認められない焦りから人を避けていきます。旧友の前に虎の姿で現れた彼は、誇りと臆病さのどちらが自分を虎にしたのかを語り始めます。'
+      };
+      catalog.push(...newBooks);
+      Object.assign(readerTexts, guideTexts);
+      Object.assign(readerSources, Object.fromEntries(newBooks.map(book => [book.title, 'https://www.google.com/search?q=' + encodeURIComponent(book.title + ' ' + book.author + ' 作品')])));
+      Object.assign(recommendations, {'饗宴':'愛という言葉を、恋愛だけで終わらせずに考え直したいときに。','幸福について':'気持ちが外側の出来事に振り回されていると感じる日に。','孫子':'勢いで動く前に、状況を静かに読み直したいときに。','孟子':'人は本当に善くなれるのか、という問いから始めたいときに。','論語':'短い言葉を一つ持ち帰るように、古典へ入りたい日に。','千夜一夜物語':'物語が次々に枝分かれする、豊かな夜の読書をしたいときに。','ギルガメシュ叙事詩':'英雄の物語の奥にある、友情と死の古さに触れたいときに。','オデュッセイア':'旅と帰還の物語を、世界文学の源流から始めたいときに。','神曲':'人生の道を見失う感覚を、壮大な詩で見つめたいときに。','君主論':'きれいごとではない現実の判断について考えたいときに。'});
+      const baseShowDetail = showDetail;
+      showDetail = function() {
+        baseShowDetail();
+        document.getElementById('detailOpening').textContent = currentBook.openingText.replace(/\\n/g, '\n');
+        const historyItem = state.history.find(entry => String(entry.id) === String(currentHistoryId));
+        document.getElementById('changeToLaterButton').textContent = historyItem?.action === 'あとで読む' ? 'やっぱり読んでみる' : 'やっぱりあとで読む';
+      };
+      const catalogOnly = [
+        ['源氏物語','紫式部'],['枕草子','清少納言'],['徒然草','吉田兼好'],['方丈記','鴨長明'],['平家物語','作者未詳'],['奥の細道','松尾芭蕉'],['古事記','太安万侶 編'],['雨月物語','上田秋成'],['東海道中膝栗毛','十返舎一九'],['浮雲','二葉亭四迷'],['破戒','島崎藤村'],['坊っちゃん','夏目漱石'],['坑夫','夏目漱石'],['春琴抄','谷崎潤一郎'],['細雪','谷崎潤一郎'],['斜陽','太宰治'],['砂の女','安部公房'],['美しい村','堀辰雄'],
+        ['イリアス','ホメロス'],['オイディプス王','ソポクレス'],['アンティゴネ','ソポクレス'],['メデイア','エウリピデス'],['アエネーイス','ウェルギリウス'],['変身物語','オウィディウス'],['告白','アウグスティヌス'],['ユートピア','トマス・モア'],['ドン・キホーテ','ミゲル・デ・セルバンテス'],['失楽園','ジョン・ミルトン'],['ガリヴァー旅行記','ジョナサン・スウィフト'],['ファウスト','ヨハン・ヴォルフガング・フォン・ゲーテ'],['高慢と偏見','ジェイン・オースティン'],['嵐が丘','エミリー・ブロンテ'],['ジェーン・エア','シャーロット・ブロンテ'],['二都物語','チャールズ・ディケンズ'],['レ・ミゼラブル','ヴィクトル・ユゴー'],['赤と黒','スタンダール'],['ボヴァリー夫人','ギュスターヴ・フローベール'],['戦争と平和','レフ・トルストイ'],['アンナ・カレーニナ','レフ・トルストイ'],['罪と罰','フョードル・ドストエフスキー'],['カラマーゾフの兄弟','フョードル・ドストエフスキー'],['父と子','イワン・ツルゲーネフ'],['白鯨','ハーマン・メルヴィル'],['緋文字','ナサニエル・ホーソーン'],['草の葉','ウォルト・ホイットマン'],
+        ['荘子','荘子'],['韓非子','韓非'],['史記','司馬遷'],['西遊記','呉承恩'],['三国志演義','羅貫中'],['水滸伝','施耐庵'],['紅楼夢','曹雪芹'],['楚辞','屈原 ほか'],['マハーバーラタ','古代インド叙事詩'],['ラーマーヤナ','ヴァールミーキ'],['バガヴァッド・ギーター','古代インド叙事詩'],['ルバイヤート','オマル・ハイヤーム'],['旧約聖書 創世記','古代イスラエルの文書群'],
+        ['ベーオウルフ','古英語の叙事詩'],['ニーベルンゲンの歌','中世ドイツの叙事詩'],['デカメロン','ジョヴァンニ・ボッカッチョ'],['カンタベリー物語','ジェフリー・チョーサー'],['地獄の季節','アルチュール・ランボー'],['悪の華','シャルル・ボードレール'],['フランケンシュタイン、あるいは現代のプロメテウス','メアリー・シェリー'],['海底二万里','ジュール・ヴェルヌ'],['タイム・マシン','H・G・ウェルズ'],['闇の奥','ジョゼフ・コンラッド'],['ペスト','アルベール・カミュ'],['異邦人','アルベール・カミュ'],['百年の孤独','ガブリエル・ガルシア＝マルケス']
+      ];
+      catalog.push(...catalogOnly.map(([title, author]) => ({
+        title, author,
+        summary:'作品の詳しい紹介とアプリ内試し読みは、順次追加しています。まずはタイトルと著者から、偶然の一冊に出会ってください。',
+        authorBio:'作品・著者の詳しい情報は、「作品についてもっと知る」から調べられます。',
+        openingText:'この作品は、目録からの提案です。\n気になったら、作品について調べて最初のページを開いてみてください。',
+        dummyStats:'読んでみる 50% / あとで読む 50%'
+      })));
+      const featuredCatalog = {
+        '源氏物語': { summary:'光源氏を中心に、宮廷の恋愛、親子、政治、老いが幾世代にもわたって交差する長編物語。平安貴族の世界を通して、人の心の移ろいを描く。', authorBio:'紫式部（生没年不詳）。平安時代中期の女房・歌人。世界最古級の長編小説とされる『源氏物語』を残した。', openingText:'帝の後宮に、特別に寵愛された女性がいた。\nその子として生まれた光源氏の物語は、華やかな宮廷の奥で始まる。', recommendation:'長い物語の最初の扉を、ゆっくり開けてみたいときに。恋愛だけでなく、人の一生を見つめる古典に触れたい日に。' },
+        '枕草子': { summary:'宮廷に仕えた清少納言が、季節、恋、人間観察、心に残る場面を鋭く書きとめた随筆。千年前の日常が、驚くほど軽やかに立ち上がる。', authorBio:'清少納言（生没年不詳）。平安時代中期の女房・歌人。中宮定子に仕え、『枕草子』を著した。', openingText:'春はあけぼの。\n空が少しずつ明るくなり、山ぎわに雲が細くたなびく、その瞬間から季節の話が始まる。', recommendation:'長編ではなく、気分に合う一段をつまむように古典を読みたいときに。' },
+        '徒然草': { summary:'隠者・兼好が、世の無常、人間の可笑しさ、日々の心得を短い段で綴る随筆。真面目さと毒気が同居する、中世日本の名文。', authorBio:'吉田兼好（1283頃–1352頃）。鎌倉末から南北朝期の歌人・随筆家。『徒然草』で無常観と人間観察を描いた。', openingText:'つれづれなるままに、日暮らし、硯に向かいて。\n心に浮かぶことを、とりとめもなく書きつけるところから始まる。', recommendation:'頭のなかを少し整理したいときに。短い文章で、するどい古典に触れたい日に。' },
+        '方丈記': { summary:'地震、飢饉、火災、遷都――災厄を見た鴨長明が、世の無常と小さな庵での暮らしを記す随筆。災害と住まいをめぐる文章としても切実。', authorBio:'鴨長明（1155頃–1216）。歌人・随筆家。都の大きな変化を経験し、晩年は隠遁生活を送った。', openingText:'川の流れは絶えず、しかも元の水ではない。\n変わり続ける世界を見つめる、静かで強い書き出し。', recommendation:'変化の多い時期に。昔の人が無常をどう言葉にしたかを知りたいときに。' },
+        'オイディプス王': { summary:'テーバイを襲う災いを止めるため、王オイディプスは過去の真実を追う。知ろうとする意志が、本人の運命を暴いていくギリシア悲劇。', authorBio:'ソポクレス（前496頃–前406頃）。古代ギリシアの悲劇詩人。人間の選択と運命の緊張を描いた。', openingText:'都に災いが広がり、人々は王オイディプスに救いを求める。\n王は犯人を探し出すと誓うが、その探求は自分自身へ向かっていく。', recommendation:'ミステリーのような緊張感で、古代悲劇の入口に入りたいときに。' },
+        'ドン・キホーテ': { summary:'騎士道物語を読みすぎた男が、自分を遍歴の騎士と思い込み、従者サンチョと旅に出る。理想と現実のずれを笑いと哀しみに変えた長編。', authorBio:'ミゲル・デ・セルバンテス（1547–1616）。スペインの作家。『ドン・キホーテ』は近代小説の出発点の一つとされる。', openingText:'田舎に住む一人の紳士は、騎士道物語を読みすぎて、自らも騎士として世を正そうと決める。', recommendation:'少し笑えて、少し切ない長い旅へ出たいときに。理想を捨てられない人の話を読みたい日に。' },
+        '罪と罰': { summary:'貧困に苦しむ元学生ラスコーリニコフは、ある殺人を正当化しようとする。罪を犯した後の心と、救いの可能性を追う心理小説。', authorBio:'フョードル・ドストエフスキー（1821–1881）。ロシアの小説家。罪、信仰、自由をめぐる濃密な長編で知られる。', openingText:'サンクトペテルブルクの暑い街を、一人の元学生が、ある決意を抱えて歩いている。\n考えはすでに、後戻りしにくい場所へ進んでいる。', recommendation:'人の心の奥まで降りていくような小説を読みたいときに。' },
+        '荘子': { summary:'夢、役に立たない大木、巨大な魚と鳥。常識を軽やかにひっくり返す寓話で、自由に生きるとは何かを問う中国思想の古典。', authorBio:'荘子（前369頃–前286頃とされる）。戦国時代の思想家。道家思想を代表する書『荘子』に名を残す。', openingText:'大きな魚が、はるかな空を飛ぶ鳥へ変わる。\n役に立つことだけを基準にしない発想が、奇妙で雄大な物語として語られる。', recommendation:'考え方の枠を外したいときに。哲学を説教ではなく、面白い比喩として読みたい日に。' }
+      };
+      Object.entries(featuredCatalog).forEach(([title, details]) => {
+        const book = catalog.find(entry => entry.title === title);
+        if (book) Object.assign(book, details);
+        if (details.recommendation) recommendations[title] = details.recommendation;
+      });
+      const favoriteFilter = document.createElement('button');
+      favoriteFilter.className = 'filter-button';
+      favoriteFilter.dataset.filter = 'favorite';
+      favoriteFilter.textContent = '★ お気に入り';
+      document.getElementById('historyFilters').append(favoriteFilter);
+      const baseRenderHistory = renderHistory;
+      renderHistory = function() {
+        const fullHistory = state.history;
+        const query = historyQuery.trim().toLowerCase();
+        const visibleHistory = fullHistory.filter(item => {
+          const matchesFilter = historyFilter === 'read' ? item.action === '読んでみる' : historyFilter === 'later' ? item.action === 'あとで読む' : historyFilter === 'finished' ? item.status === '読了' : historyFilter === 'favorite' ? item.favorite : true;
+          return matchesFilter && (!query || (item.title + ' ' + item.author).toLowerCase().includes(query));
+        });
+        if (historyFilter === 'favorite') state.history = visibleHistory;
+        baseRenderHistory();
+        state.history = fullHistory;
+        document.querySelectorAll('#historyList .history-item').forEach((node, index) => {
+          if (visibleHistory[index]) node.dataset.historyOpenId = String(visibleHistory[index].id);
+        });
+      };
+      document.getElementById('historyList').addEventListener('click', event => {
+        if (event.target.closest('button')) return;
+        const id = event.target.closest('[data-history-open-id]')?.dataset.historyOpenId;
+        const item = state.history.find(entry => String(entry.id) === id);
+        if (!item) return;
+        currentBook = catalog.find(book => book.title === item.title && book.author === item.author);
+        if (!currentBook) return;
+        currentHistoryId = item.id;
+        currentMode = item.mode;
+        showDetail();
+      });
+      const normalizeReadingText = value => {
+        // データ内の「\n」や「\\n」を、画面表示用の実際の改行へ統一します。
+        return String(value || '').replace(/\\{1,}n/g, '\n');
+      };
+      showReader = function() {
+        const b = currentBook, body = document.getElementById('readerBody'), isGuide = Boolean(guideTexts[b.title]);
+        const normalizedText = normalizeReadingText(readerTexts[b.title]);
+        const paragraphs = normalizedText.split(/\n\n+/).map(p => '<p>' + escapeHtml(p) + '</p>').join('');
+        const guide = extendedGuides[b.title] || (isGuide ? '' : b.summary + '\n\n' + (recommendations[b.title] || '気になった場面をひとつ持ち帰って、続きは本で確かめてみてください。'));
+        const normalizedGuide = normalizeReadingText(guide);
+        const companion = normalizedGuide ? '<section class="reader-guide"><h2>この先の見どころ</h2>' + normalizedGuide.split(/\n\n+/).map(p => '<p>' + escapeHtml(p) + '</p>').join('') + '</section>' : '';
+        const credit = isGuide ? '読書の導入ガイド（アプリ内編集）<br>作品：' + escapeHtml(b.title) + ' ／ 著者：' + escapeHtml(b.author) + '<br>特定の訳文ではなく、作品の方向性が残るよう編集・収録しています。<br><a href="' + readerSources[b.title] + '" target="_blank" rel="noopener">作品を詳しく調べる</a>' : '試し読み＋読書ガイド（アプリ内収録）<br>作品：' + escapeHtml(b.title) + ' ／ 著者：' + escapeHtml(b.author) + '<br>本文冒頭のあとに、この先の見どころを添えています。<br>出典：<a href="' + readerSources[b.title] + '" target="_blank" rel="noopener">青空文庫 作品カード</a>';
+        document.getElementById('readerTitle').textContent = b.title;
+        document.getElementById('readerAuthor').textContent = b.author;
+        body.innerHTML = paragraphs + companion + '<footer class="reader-credit">' + credit + '</footer>';
+        body.style.fontSize = readerFontSize + 'px';
+        const saved = Number(localStorage.getItem('classicReaderPosition_' + b.title)) || 0;
+        requestAnimationFrame(() => { body.scrollTop = saved; });
+        showScreen('reader');
+      };
+    })();
+  </script>
+
+  <script>
+    // ABOUT THIS APP の文章はここにまとめ、文面の調整をしやすくしています。
+    (() => {
+      const sections = document.querySelectorAll('#about .about-section');
+      if (sections.length < 4) return;
+
+      sections[0].querySelector('.about-copy').textContent = `古典を読みたいけど、なにを読もうか決められない。
+選択肢が多すぎると、古典はなかなか読めません。
+
+このアプリは、古今東西の古典からひとつだけ、あなたに提案します。
+気になる古典に出会ったら、すぐに本文へ。
+
+古典への一歩を、すこしだけ軽くする。
+「きょうの古典」は、そんなちいさなアプリです。`;
+
+      sections[2].querySelector('.about-heading').textContent = '◇FOR CLASSICS LOVERS';
+      sections[3].querySelector('.about-copy').textContent = `このアプリは古典を提案するアプリであり、古典を通読するためのアプリではありません。
+また、このアプリで提案される古典のすべてが、青空文庫やKindle等のサービスを通じて読めるわけではありません。
+一部の作品は、無料で読むことができない場合があります。あらかじめご了承ください。
+
+青空文庫やKindle無料版が利用できない場合でも、Kindleの定額読み放題サービス「Kindle Unlimited」では、配信されている場合があります。実際、Kindle Unlimitedでは、多くの古典作品が配信されています。
+Kindle Unlimitedは、以下のボタンからご登録可能です。※Kindle Unlimitedの利用は有料です。`;
+    })();
+  </script>
+  <script>
+    // HTTPS で公開した場合だけ、Android のホーム画面アプリとしてオフライン利用を可能にします。
+    if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+      window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
+    }
+  </script>
+</body>
+</html>
