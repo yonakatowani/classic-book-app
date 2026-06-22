@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#ffffff"/>
+  <path d="M108 134c61-17 108 2 148 43v212c-40-41-87-60-148-43V134Zm296 0c-61-17-108 2-148 43v212c40-41 87-60 148-43V134Z" fill="none" stroke="#171717" stroke-width="18" stroke-linejoin="round"/>
+  <path d="M256 177v212" stroke="#171717" stroke-width="12"/>
+  <text x="256" y="452" text-anchor="middle" font-family="serif" font-size="36" fill="#171717">きょうの古典</text>
+</svg>
