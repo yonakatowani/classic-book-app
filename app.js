@@ -86,6 +86,63 @@
       if (touch) finishHomeSwipe(touch.clientX, touch.clientY);
     }, { passive:true });
 
+    // 本棚を左へ払うと、右側からメイン画面をのぞかせながら戻れます。
+    let historySwipeStart = null;
+    const historyScreen = document.getElementById('history');
+    const clearHistoryPreview = () => {
+      historySwipeStart = null;
+      historyScreen.classList.remove('swiping-page');
+      homeScreen.classList.remove('swipe-preview');
+      historyScreen.style.transform = '';
+      homeScreen.style.transform = '';
+    };
+    const startHistorySwipe = (x, y, target) => {
+      if (target?.closest?.('button, a, input')) return;
+      historySwipeStart = { x, y };
+    };
+    const moveHistorySwipe = (x, y) => {
+      if (!historySwipeStart) return;
+      const dx = x - historySwipeStart.x;
+      const dy = y - historySwipeStart.y;
+      if (dx >= -8 || Math.abs(dy) > 72) return;
+      const distance = Math.min(Math.abs(dx), window.innerWidth * .86);
+      homeScreen.classList.add('swipe-preview');
+      historyScreen.classList.add('swiping-page');
+      historyScreen.style.transform = 'translateX(' + dx + 'px)';
+      homeScreen.style.transform = 'translateX(' + Math.max(0, window.innerWidth - distance) + 'px)';
+    };
+    const finishHistorySwipe = (x, y) => {
+      if (!historySwipeStart) return;
+      const dx = x - historySwipeStart.x;
+      const dy = y - historySwipeStart.y;
+      if (dx < -88 && Math.abs(dy) < 56) {
+        clearHistoryPreview();
+        showScreen('home');
+        return;
+      }
+      clearHistoryPreview();
+    };
+    historyScreen.addEventListener('pointerdown', event => {
+      startHistorySwipe(event.clientX, event.clientY, event.target);
+      if (historySwipeStart) historyScreen.setPointerCapture?.(event.pointerId);
+    });
+    historyScreen.addEventListener('pointermove', event => moveHistorySwipe(event.clientX, event.clientY));
+    historyScreen.addEventListener('pointerup', event => finishHistorySwipe(event.clientX, event.clientY));
+    historyScreen.addEventListener('pointercancel', clearHistoryPreview);
+    historyScreen.addEventListener('touchstart', event => {
+      const touch = event.changedTouches[0];
+      if (touch) startHistorySwipe(touch.clientX, touch.clientY, event.target);
+    }, { passive:true });
+    historyScreen.addEventListener('touchmove', event => {
+      const touch = event.changedTouches[0];
+      if (touch) moveHistorySwipe(touch.clientX, touch.clientY);
+    }, { passive:true });
+    historyScreen.addEventListener('touchend', event => {
+      const touch = event.changedTouches[0];
+      if (touch) finishHistorySwipe(touch.clientX, touch.clientY);
+    }, { passive:true });
+    historyScreen.addEventListener('touchcancel', clearHistoryPreview, { passive:true });
+
     // 作品カードを右へ払うと「読んでみる」、左へ払うと「あとで読む」です。
     let swipeStartX = null;
     const swipeCard = document.getElementById('swipeCard');
