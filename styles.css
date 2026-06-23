@@ -127,6 +127,6 @@
     .shelf-button { width:100%; margin-top:10px; padding:7px; border:1px solid var(--line); border-radius:8px; background:#fff; color:var(--ink); font-size:12px; cursor:pointer; }
     .footer-button { margin-top:auto; }
     .about-section { margin:0 0 22px; }
-    .about-heading { margin:0 0 8px; font-family:Georgia,"Times New Roman",serif; font-size:12px; letter-spacing:.08em; }
+    .about-heading { margin:0 0 8px; font-family:Georgia,"Times New Roman",serif; font-size:14px; letter-spacing:.08em; }
     .about-copy { margin:0; white-space:pre-line; color:var(--muted); font-size:14px; line-height:1.8; }
     .unlimited-link { display:inline-flex; align-items:center; justify-content:center; min-height:46px; margin-top:12px; padding:10px 14px; border:1px solid var(--line); border-radius:10px; color:var(--ink); text-decoration:none; font-size:13px; }

@@ -56,6 +56,22 @@
     document.getElementById('readerBack').addEventListener('click', () => showScreen('detail'));
     document.getElementById('readerBody').addEventListener('scroll', e => { if (currentBook) localStorage.setItem(`classicReaderPosition_${currentBook.title}`, String(e.currentTarget.scrollTop)); });
     document.querySelectorAll('[data-font]').forEach(button => button.addEventListener('click', () => { readerFontSize = Math.max(15, Math.min(24, readerFontSize + Number(button.dataset.font))); localStorage.setItem('classicReaderFontSize', String(readerFontSize)); document.getElementById('readerBody').style.fontSize = `${readerFontSize}px`; }));
+    // メイン画面の空白を右へ払うと、本棚をすぐ開けます。
+    let homeSwipeStart = null;
+    const homeScreen = document.getElementById('home');
+    homeScreen.addEventListener('pointerdown', event => {
+      if (event.target.closest('button, a, input')) return;
+      homeSwipeStart = { x: event.clientX, y: event.clientY };
+    });
+    homeScreen.addEventListener('pointerup', event => {
+      if (!homeSwipeStart) return;
+      const dx = event.clientX - homeSwipeStart.x;
+      const dy = event.clientY - homeSwipeStart.y;
+      homeSwipeStart = null;
+      if (dx > 88 && Math.abs(dy) < 56) showScreen('history');
+    });
+    homeScreen.addEventListener('pointercancel', () => { homeSwipeStart = null; });
+
     // 作品カードを右へ払うと「読んでみる」、左へ払うと「あとで読む」です。
     let swipeStartX = null;
     const swipeCard = document.getElementById('swipeCard');
@@ -180,6 +196,7 @@
 「きょうの古典」は、そんなちいさなアプリです。`;
 
       sections[2].querySelector('.about-heading').textContent = '◇FOR CLASSICS LOVERS';
+      sections[2].querySelector('.about-copy').textContent = '日頃から古典に慣れ親しんでいる古典愛好家の方も、「きょうの古典」で偶然の一冊をお楽しみください。\n普段読まないような時代やジャンルの古典と巡り合えれば幸甚です';
       sections[3].querySelector('.about-copy').textContent = `このアプリは古典を提案するアプリであり、古典を通読するためのアプリではありません。
 また、このアプリで提案される古典のすべてが、青空文庫やKindle等のサービスを通じて読めるわけではありません。
 一部の作品は、無料で読むことができない場合があります。あらかじめご了承ください。
