@@ -5,8 +5,8 @@
 ## 収録の段階
 
 1. 目録：title、author
-2. 詳細：summary、authorBio、openingText、recommendation
-3. 試し読み：readerTexts と readerSources
+2. 詳細：summary、authorBio、openingText、recommendation、地域・時代・ジャンル
+3. 試し読み：readerTexts と readerSources、利用可能性
 
 まずは目録として追加し、反応がよい作品から詳細と試し読みを育ててください。
 
@@ -15,3 +15,5 @@
 - 海外作品は訳文の権利があるため、許諾・利用条件が明確な本文だけを readerTexts へ収録します。
 - 青空文庫由来の本文には readerSources を設定し、出典を残します。
 - title は履歴との照合に使うため、変更する場合は既存利用者への影響を確認してください。
+- 重点作品は、日本語での読書可能性・冒頭の魅力・出典・地域や時代のバランスを満たすものから育てます。
+- curation は提案比率と分類の根拠です。分類を追加するときは、地域・時代・ジャンルも併せて確認してください。

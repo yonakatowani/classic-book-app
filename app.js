@@ -1,5 +1,6 @@
 // 作品データはここに追加・編集できます。
     const books = window.CLASSICS_LIBRARY.books;
+    const curation = window.CLASSICS_LIBRARY.curation;
 
     const KEY = 'classicFateApp_v1';
     let state = loadState();
@@ -27,7 +28,49 @@
     function showScreen(id) { closeMenu(); refreshStock(); document.querySelectorAll('.screen').forEach(el => el.classList.toggle('active', el.id === id)); if (id === 'history') renderHistory(); if (id === 'stats') renderStats(); }
     // Kindle 無料版などの導線もあるため、海外古典を含めた作品群を提案します。
     const catalog = books;
-    function chooseBook() { const candidates = catalog.filter(book => !currentBook || book.title !== currentBook.title); currentBook = candidates[Math.floor(Math.random() * candidates.length)] || catalog[0]; renderProposal(); }
+    function getBookMetadata(book) {
+      if (book.curation) return book.curation;
+      let category = 'world_modern';
+      if (curation.ancientMedievalTitles.includes(book.title)) category = 'ancient_medieval';
+      else if (curation.thoughtAuthors.includes(book.author)) category = 'thought';
+      else if (curation.japanModernAuthors.includes(book.author)) category = 'japan_modern';
+      const profile = curation.profiles[category];
+      return {
+        category,
+        region:profile.region,
+        era:profile.era,
+        genre:profile.genre,
+        availability:readerTexts?.[book.title] ? 'app_reader' : 'external_search'
+      };
+    }
+    function applyCurationToCatalog() {
+      catalog.forEach(book => { book.curation = getBookMetadata(book); });
+    }
+    function weightedCategory(candidates) {
+      const recentTitles = state.suggestionHistory || [];
+      const recentCategories = recentTitles.slice(-2).map(title => catalog.find(book => book.title === title)?.curation?.category);
+      const groups = Object.keys(curation.weights).filter(category => candidates.some(book => book.curation.category === category));
+      const score = category => curation.weights[category] * (recentCategories.includes(category) ? .2 : 1);
+      const total = groups.reduce((sum, category) => sum + score(category), 0);
+      let point = Math.random() * total;
+      for (const category of groups) {
+        point -= score(category);
+        if (point <= 0) return category;
+      }
+      return groups[0];
+    }
+    function chooseBook() {
+      const recentTitles = state.suggestionHistory || [];
+      const candidates = catalog.filter(book => book.title !== currentBook?.title && !recentTitles.slice(-3).includes(book.title));
+      const usable = candidates.length ? candidates : catalog.filter(book => book.title !== currentBook?.title);
+      const category = weightedCategory(usable);
+      const categoryPool = usable.filter(book => book.curation.category === category && book.author !== currentBook?.author);
+      const pool = categoryPool.length ? categoryPool : usable.filter(book => book.curation.category === category);
+      currentBook = pool[Math.floor(Math.random() * pool.length)] || usable[0] || catalog[0];
+      state.suggestionHistory = [...recentTitles, currentBook.title].slice(-12);
+      saveState();
+      renderProposal();
+    }
     function renderProposal() { const b = currentBook; const card = document.getElementById('swipeCard'); const title = document.getElementById('proposalTitle'); card.classList.remove('commit-read', 'commit-later', 'dragging'); card.style.transform = ''; card.style.opacity = ''; title.textContent = b.title; title.style.fontSize = b.title.length > 8 ? 'clamp(24px, 7.2vw, 32px)' : ''; document.getElementById('proposalAuthor').textContent = b.author; document.getElementById('proposalSummary').textContent = b.summary; document.getElementById('proposalBio').textContent = b.authorBio; document.getElementById('proposalStats').textContent = b.dummyStats; document.getElementById('workSearchLink').href = `https://www.google.com/search?q=${encodeURIComponent(`${b.title} ${b.author} 作品 解説`)}`; document.getElementById('authorSearchLink').href = `https://www.google.com/search?q=${encodeURIComponent(`${b.author} 経歴 代表作`)}`; document.getElementById('accordion').classList.remove('open'); document.getElementById('detailToggle').textContent = '詳細を見る'; const bookCard = document.querySelector('.book-card'); bookCard.style.animation = 'none'; void bookCard.offsetWidth; bookCard.style.animation = ''; }
     function beginProposal(mode) { refreshStock(); if (mode === 'normal' && stockCount() === 0) return; currentMode = mode; showScreen('stage'); setTimeout(() => { chooseBook(); showScreen('proposal'); }, 1900); }
     function addHistory(action) { const entry = { id: Date.now() + Math.random(), selectedAt: new Date().toISOString(), mode: currentMode, title: currentBook.title, author: currentBook.author, action, status:'未読' }; state.history.unshift(entry); saveState(); return entry.id; }
@@ -56,92 +99,88 @@
     document.getElementById('readerBack').addEventListener('click', () => showScreen('detail'));
     document.getElementById('readerBody').addEventListener('scroll', e => { if (currentBook) localStorage.setItem(`classicReaderPosition_${currentBook.title}`, String(e.currentTarget.scrollTop)); });
     document.querySelectorAll('[data-font]').forEach(button => button.addEventListener('click', () => { readerFontSize = Math.max(15, Math.min(24, readerFontSize + Number(button.dataset.font))); localStorage.setItem('classicReaderFontSize', String(readerFontSize)); document.getElementById('readerBody').style.fontSize = `${readerFontSize}px`; }));
-    // メイン画面の空白を右へ払うと、本棚をすぐ開けます。
-    let homeSwipeStart = null;
+    // メインを中央に、本棚と統計情報を左右に置く3画面スワイプです。
     const homeScreen = document.getElementById('home');
-    const startHomeSwipe = (x, y, target) => {
-      if (target?.closest?.('button, a, input')) return;
-      homeSwipeStart = { x, y };
-    };
-    const finishHomeSwipe = (x, y) => {
-      if (!homeSwipeStart) return;
-      const dx = x - homeSwipeStart.x;
-      const dy = y - homeSwipeStart.y;
-      homeSwipeStart = null;
-      if (dx > 88 && Math.abs(dy) < 56) showScreen('history');
-    };
-    homeScreen.addEventListener('pointerdown', event => {
-      startHomeSwipe(event.clientX, event.clientY, event.target);
-      if (homeSwipeStart) homeScreen.setPointerCapture?.(event.pointerId);
-    });
-    homeScreen.addEventListener('pointerup', event => finishHomeSwipe(event.clientX, event.clientY));
-    homeScreen.addEventListener('pointercancel', () => { homeSwipeStart = null; });
-    // Pointer Eventsを使わないブラウザでも動くよう、タッチ操作も明示的に受け取ります。
-    homeScreen.addEventListener('touchstart', event => {
-      const touch = event.changedTouches[0];
-      if (touch) startHomeSwipe(touch.clientX, touch.clientY, event.target);
-    }, { passive:true });
-    homeScreen.addEventListener('touchend', event => {
-      const touch = event.changedTouches[0];
-      if (touch) finishHomeSwipe(touch.clientX, touch.clientY);
-    }, { passive:true });
-
-    // 本棚を左へ払うと、右側からメイン画面をのぞかせながら戻れます。
-    let historySwipeStart = null;
     const historyScreen = document.getElementById('history');
-    const clearHistoryPreview = () => {
-      historySwipeStart = null;
-      historyScreen.classList.remove('swiping-page');
-      homeScreen.classList.remove('swipe-preview');
-      historyScreen.style.transform = '';
-      homeScreen.style.transform = '';
+    const statsScreen = document.getElementById('stats');
+    let pageSwipe = null;
+    const slideTargets = {
+      home: direction => direction > 0 ? historyScreen : statsScreen,
+      history: direction => direction < 0 ? homeScreen : null,
+      stats: direction => direction > 0 ? homeScreen : null
     };
-    const startHistorySwipe = (x, y, target) => {
+    const clearPagePreview = () => {
+      pageSwipe = null;
+      [homeScreen, historyScreen, statsScreen].forEach(screen => {
+        screen.classList.remove('swiping-page', 'swipe-preview');
+        screen.style.transform = '';
+      });
+    };
+    const preparePreview = target => {
+      if (target.id === 'history') renderHistory();
+      if (target.id === 'stats') renderStats();
+      target.classList.add('swipe-preview');
+    };
+    const startPageSwipe = (source, x, y, target) => {
       if (target?.closest?.('button, a, input')) return;
-      historySwipeStart = { x, y };
+      pageSwipe = { source, x, y, target:null, direction:0 };
     };
-    const moveHistorySwipe = (x, y) => {
-      if (!historySwipeStart) return;
-      const dx = x - historySwipeStart.x;
-      const dy = y - historySwipeStart.y;
-      if (dx >= -8 || Math.abs(dy) > 72) return;
+    const movePageSwipe = (x, y) => {
+      if (!pageSwipe) return;
+      const dx = x - pageSwipe.x;
+      const dy = y - pageSwipe.y;
+      if (Math.abs(dy) > 72 || Math.abs(dx) < 8) return;
+      const direction = dx > 0 ? 1 : -1;
+      const target = slideTargets[pageSwipe.source.id](direction);
+      if (!target) return;
+      if (pageSwipe.target !== target) {
+        const source = pageSwipe.source;
+        const startX = pageSwipe.x;
+        const startY = pageSwipe.y;
+        clearPagePreview();
+        pageSwipe = { source, x:startX, y:startY, target, direction };
+        preparePreview(target);
+        pageSwipe.source.classList.add('swiping-page');
+      }
       const distance = Math.min(Math.abs(dx), window.innerWidth * .86);
-      homeScreen.classList.add('swipe-preview');
-      historyScreen.classList.add('swiping-page');
-      historyScreen.style.transform = 'translateX(' + dx + 'px)';
-      homeScreen.style.transform = 'translateX(' + Math.max(0, window.innerWidth - distance) + 'px)';
+      pageSwipe.source.style.transform = 'translateX(' + dx + 'px)';
+      const previewX = direction > 0 ? -window.innerWidth + distance : window.innerWidth - distance;
+      target.style.transform = 'translateX(' + previewX + 'px)';
     };
-    const finishHistorySwipe = (x, y) => {
-      if (!historySwipeStart) return;
-      const dx = x - historySwipeStart.x;
-      const dy = y - historySwipeStart.y;
-      if (dx < -88 && Math.abs(dy) < 56) {
-        clearHistoryPreview();
-        showScreen('home');
+    const finishPageSwipe = (x, y) => {
+      if (!pageSwipe) return;
+      const dx = x - pageSwipe.x;
+      const dy = y - pageSwipe.y;
+      const target = pageSwipe.target;
+      if (target && Math.abs(dx) > 88 && Math.abs(dy) < 56) {
+        clearPagePreview();
+        showScreen(target.id);
         return;
       }
-      clearHistoryPreview();
+      clearPagePreview();
     };
-    historyScreen.addEventListener('pointerdown', event => {
-      startHistorySwipe(event.clientX, event.clientY, event.target);
-      if (historySwipeStart) historyScreen.setPointerCapture?.(event.pointerId);
+    [homeScreen, historyScreen, statsScreen].forEach(source => {
+      source.addEventListener('pointerdown', event => {
+        startPageSwipe(source, event.clientX, event.clientY, event.target);
+        if (pageSwipe) source.setPointerCapture?.(event.pointerId);
+      });
+      source.addEventListener('pointermove', event => movePageSwipe(event.clientX, event.clientY));
+      source.addEventListener('pointerup', event => finishPageSwipe(event.clientX, event.clientY));
+      source.addEventListener('pointercancel', clearPagePreview);
+      source.addEventListener('touchstart', event => {
+        const touch = event.changedTouches[0];
+        if (touch) startPageSwipe(source, touch.clientX, touch.clientY, event.target);
+      }, { passive:true });
+      source.addEventListener('touchmove', event => {
+        const touch = event.changedTouches[0];
+        if (touch) movePageSwipe(touch.clientX, touch.clientY);
+      }, { passive:true });
+      source.addEventListener('touchend', event => {
+        const touch = event.changedTouches[0];
+        if (touch) finishPageSwipe(touch.clientX, touch.clientY);
+      }, { passive:true });
+      source.addEventListener('touchcancel', clearPagePreview, { passive:true });
     });
-    historyScreen.addEventListener('pointermove', event => moveHistorySwipe(event.clientX, event.clientY));
-    historyScreen.addEventListener('pointerup', event => finishHistorySwipe(event.clientX, event.clientY));
-    historyScreen.addEventListener('pointercancel', clearHistoryPreview);
-    historyScreen.addEventListener('touchstart', event => {
-      const touch = event.changedTouches[0];
-      if (touch) startHistorySwipe(touch.clientX, touch.clientY, event.target);
-    }, { passive:true });
-    historyScreen.addEventListener('touchmove', event => {
-      const touch = event.changedTouches[0];
-      if (touch) moveHistorySwipe(touch.clientX, touch.clientY);
-    }, { passive:true });
-    historyScreen.addEventListener('touchend', event => {
-      const touch = event.changedTouches[0];
-      if (touch) finishHistorySwipe(touch.clientX, touch.clientY);
-    }, { passive:true });
-    historyScreen.addEventListener('touchcancel', clearHistoryPreview, { passive:true });
 
     // 作品カードを右へ払うと「読んでみる」、左へ払うと「あとで読む」です。
     let swipeStartX = null;
@@ -197,6 +236,14 @@
         if (book) Object.assign(book, details);
         if (details.recommendation) recommendations[title] = details.recommendation;
       });
+      applyCurationToCatalog();
+      const baseShowDetailWithCuration = showDetail;
+      showDetail = function() {
+        baseShowDetailWithCuration();
+        const meta = getBookMetadata(currentBook);
+        const availability = curation.accessLabels[meta.availability];
+        document.getElementById('detailMetadata').textContent = [meta.region, meta.era, meta.genre, availability].join(' · ');
+      };
       const favoriteFilter = document.createElement('button');
       favoriteFilter.className = 'filter-button';
       favoriteFilter.dataset.filter = 'favorite';

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kyono-koten-v10';
+const CACHE_NAME = 'kyono-koten-v12';
 const APP_FILES = [
   './',
   './index.html',
