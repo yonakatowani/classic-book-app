@@ -27,6 +27,7 @@
     .screen.active { display:flex; }
     @keyframes fade { from { opacity:0; transform:translateY(6px) } to { opacity:1; transform:none } }
     .home-center,.stage,.proposal { flex:1; display:flex; flex-direction:column; justify-content:center; }
+    #home { touch-action:pan-y; }
     .eyebrow { margin:0 0 14px; color:var(--muted); font-size:13px; letter-spacing:.08em; }
     h1,h2,h3,p { margin-top:0; }
     h1 { font-family:Georgia,"Times New Roman",serif; font-size:clamp(32px,9vw,43px); line-height:1.25; margin-bottom:14px; }

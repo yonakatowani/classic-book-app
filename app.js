@@ -59,18 +59,32 @@
     // メイン画面の空白を右へ払うと、本棚をすぐ開けます。
     let homeSwipeStart = null;
     const homeScreen = document.getElementById('home');
-    homeScreen.addEventListener('pointerdown', event => {
-      if (event.target.closest('button, a, input')) return;
-      homeSwipeStart = { x: event.clientX, y: event.clientY };
-    });
-    homeScreen.addEventListener('pointerup', event => {
+    const startHomeSwipe = (x, y, target) => {
+      if (target?.closest?.('button, a, input')) return;
+      homeSwipeStart = { x, y };
+    };
+    const finishHomeSwipe = (x, y) => {
       if (!homeSwipeStart) return;
-      const dx = event.clientX - homeSwipeStart.x;
-      const dy = event.clientY - homeSwipeStart.y;
+      const dx = x - homeSwipeStart.x;
+      const dy = y - homeSwipeStart.y;
       homeSwipeStart = null;
       if (dx > 88 && Math.abs(dy) < 56) showScreen('history');
+    };
+    homeScreen.addEventListener('pointerdown', event => {
+      startHomeSwipe(event.clientX, event.clientY, event.target);
+      if (homeSwipeStart) homeScreen.setPointerCapture?.(event.pointerId);
     });
+    homeScreen.addEventListener('pointerup', event => finishHomeSwipe(event.clientX, event.clientY));
     homeScreen.addEventListener('pointercancel', () => { homeSwipeStart = null; });
+    // Pointer Eventsを使わないブラウザでも動くよう、タッチ操作も明示的に受け取ります。
+    homeScreen.addEventListener('touchstart', event => {
+      const touch = event.changedTouches[0];
+      if (touch) startHomeSwipe(touch.clientX, touch.clientY, event.target);
+    }, { passive:true });
+    homeScreen.addEventListener('touchend', event => {
+      const touch = event.changedTouches[0];
+      if (touch) finishHomeSwipe(touch.clientX, touch.clientY);
+    }, { passive:true });
 
     // 作品カードを右へ払うと「読んでみる」、左へ払うと「あとで読む」です。
     let swipeStartX = null;
@@ -196,7 +210,7 @@
 「きょうの古典」は、そんなちいさなアプリです。`;
 
       sections[2].querySelector('.about-heading').textContent = '◇FOR CLASSICS LOVERS';
-      sections[2].querySelector('.about-copy').textContent = '日頃から古典に慣れ親しんでいる古典愛好家の方も、「きょうの古典」で偶然の一冊をお楽しみください。\n普段読まないような時代やジャンルの古典と巡り合えれば幸甚です';
+      sections[2].querySelector('.about-copy').textContent = '日頃から古典に慣れ親しんでいる古典愛好家の方も、「きょうの古典」で偶然の一冊をお楽しみください。\nこのアプリを通じて、普段は読まない時代やジャンルの古典とめぐり合うことができたなら、幸甚です';
       sections[3].querySelector('.about-copy').textContent = `このアプリは古典を提案するアプリであり、古典を通読するためのアプリではありません。
 また、このアプリで提案される古典のすべてが、青空文庫やKindle等のサービスを通じて読めるわけではありません。
 一部の作品は、無料で読むことができない場合があります。あらかじめご了承ください。
